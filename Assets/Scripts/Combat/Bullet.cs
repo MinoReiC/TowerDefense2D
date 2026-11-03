@@ -11,8 +11,17 @@ namespace TowerDefense.Combat
         [SerializeField] private float armorPenetration = 0.15f;
         [SerializeField] private float lifeTime = 5f;
 
+        [Header("Animated Frame Settings")]
+        [SerializeField] private Sprite[] animationFrames;
+        [SerializeField] private float frameRate = 18f; // 18 frames/giây cho chuyển động xoay tia cực kỳ mượt mà
+        [SerializeField] private bool rotateContinuously = false;
+        [SerializeField] private float spinSpeed = 360f; // Góc xoay gia tốc
+
         private Transform target;
         private bool hasHit = false;
+        private SpriteRenderer spriteRenderer;
+        private float frameTimer = 0f;
+        private int currentFrameIndex = 0;
 
         public void Seek(Transform targetTransform)
         {
@@ -26,21 +35,45 @@ namespace TowerDefense.Combat
             if (isCrit)
             {
                 transform.localScale *= 1.35f;
-                SpriteRenderer sr = GetComponent<SpriteRenderer>();
-                if (sr != null) sr.color = new Color(1f, 0.90f, 0.25f, 1f);
+                if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
+                if (spriteRenderer != null) spriteRenderer.color = new Color(1f, 0.90f, 0.25f, 1f);
             }
         }
 
         public void SetProjectileVisual(Sprite projSprite, Color tintColor, float scaleMultiplier = 1f, float customSpeed = -1f)
         {
-            SpriteRenderer sr = GetComponent<SpriteRenderer>();
-            if (sr != null)
+            if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
             {
-                if (projSprite != null) sr.sprite = projSprite;
-                sr.color = tintColor;
+                if (projSprite != null) spriteRenderer.sprite = projSprite;
+                spriteRenderer.color = tintColor;
             }
             transform.localScale *= scaleMultiplier;
             if (customSpeed > 0f) speed = customSpeed;
+        }
+
+        /// <summary>
+        /// Kích hoạt chuỗi animation 4 frame cho đạn (Ví dụ Đạn Laze Mặt Trời Lượng Tử Cấp 3 xoay lưỡi từ tính & hồ quang).
+        /// </summary>
+        public void SetAnimationFrames(Sprite[] frames, float fps = 18f, bool spin = false, float spinRate = 360f)
+        {
+            animationFrames = frames;
+            frameRate = fps;
+            rotateContinuously = spin;
+            spinSpeed = spinRate;
+            frameTimer = 0f;
+            currentFrameIndex = 0;
+
+            if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null && frames != null && frames.Length > 0 && frames[0] != null)
+            {
+                spriteRenderer.sprite = frames[0];
+            }
+        }
+
+        private void Awake()
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
         private void Start()
@@ -50,6 +83,8 @@ namespace TowerDefense.Combat
 
         private void Update()
         {
+            UpdateAnimation();
+
             if (target == null)
             {
                 // Khi mục tiêu bị tiêu diệt trước, đạn bay thẳng tiếp theo hướng hiện tại
@@ -72,6 +107,31 @@ namespace TowerDefense.Combat
             transform.rotation = Quaternion.Euler(0, 0, angle);
 
             transform.position += dir.normalized * distanceThisFrame;
+        }
+
+        private void UpdateAnimation()
+        {
+            // 1. Chạy chuỗi frame theo frameRate (Ví dụ 4 frame Laze Lượng Tử Cấp 3: Rời nòng -> Gia tốc -> Cực đại -> Nổ)
+            if (animationFrames != null && animationFrames.Length > 0 && frameRate > 0f)
+            {
+                frameTimer += Time.deltaTime;
+                float interval = 1f / frameRate;
+                if (frameTimer >= interval)
+                {
+                    frameTimer -= interval;
+                    currentFrameIndex = (currentFrameIndex + 1) % animationFrames.Length;
+                    if (spriteRenderer != null && animationFrames[currentFrameIndex] != null)
+                    {
+                        spriteRenderer.sprite = animationFrames[currentFrameIndex];
+                    }
+                }
+            }
+
+            // 2. Xoay tự thân liên tục nếu bật chế độ xoay lưỡi từ tính
+            if (rotateContinuously)
+            {
+                transform.Rotate(0f, 0f, spinSpeed * Time.deltaTime, Space.Self);
+            }
         }
 
         private void HitTarget()

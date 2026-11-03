@@ -688,8 +688,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TowerDefense.Towers.TowerBuildSpot
   cannonTowerPrefab: {fileID: 7063051662079000027, guid: 7610f87246e094b4cbda045a0ea38417, type: 3}
   rocketTowerPrefab: {fileID: 4538651218321707369, guid: 00a3e21f7ca30854ba5f897fd2e704a7, type: 3}
+  laserTowerPrefab: {fileID: 0}
   cannonCost: 50
   rocketCost: 80
+  laserCost: 150
   clickRadius: 0.65
   buildEffectPrefab: {fileID: 7050366133585093951, guid: 0b8fadd66a0032e4195603a3f06036e0, type: 3}
   baseRenderer: {fileID: 348576073}
@@ -1882,8 +1884,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TowerDefense.Towers.TowerBuildSpot
   cannonTowerPrefab: {fileID: 7063051662079000027, guid: 7610f87246e094b4cbda045a0ea38417, type: 3}
   rocketTowerPrefab: {fileID: 4538651218321707369, guid: 00a3e21f7ca30854ba5f897fd2e704a7, type: 3}
+  laserTowerPrefab: {fileID: 0}
   cannonCost: 50
   rocketCost: 80
+  laserCost: 150
   clickRadius: 0.65
   buildEffectPrefab: {fileID: 7050366133585093951, guid: 0b8fadd66a0032e4195603a3f06036e0, type: 3}
   baseRenderer: {fileID: 1003030797}
@@ -1999,8 +2003,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TowerDefense.Towers.TowerBuildSpot
   cannonTowerPrefab: {fileID: 7063051662079000027, guid: 7610f87246e094b4cbda045a0ea38417, type: 3}
   rocketTowerPrefab: {fileID: 4538651218321707369, guid: 00a3e21f7ca30854ba5f897fd2e704a7, type: 3}
+  laserTowerPrefab: {fileID: 0}
   cannonCost: 50
   rocketCost: 80
+  laserCost: 150
   clickRadius: 0.65
   buildEffectPrefab: {fileID: 7050366133585093951, guid: 0b8fadd66a0032e4195603a3f06036e0, type: 3}
   baseRenderer: {fileID: 1019516056}
@@ -2435,8 +2441,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TowerDefense.Towers.TowerBuildSpot
   cannonTowerPrefab: {fileID: 7063051662079000027, guid: 7610f87246e094b4cbda045a0ea38417, type: 3}
   rocketTowerPrefab: {fileID: 4538651218321707369, guid: 00a3e21f7ca30854ba5f897fd2e704a7, type: 3}
+  laserTowerPrefab: {fileID: 0}
   cannonCost: 50
   rocketCost: 80
+  laserCost: 150
   clickRadius: 0.65
   buildEffectPrefab: {fileID: 7050366133585093951, guid: 0b8fadd66a0032e4195603a3f06036e0, type: 3}
   baseRenderer: {fileID: 1389501244}
@@ -2598,8 +2606,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TowerDefense.Towers.TowerBuildSpot
   cannonTowerPrefab: {fileID: 7063051662079000027, guid: 7610f87246e094b4cbda045a0ea38417, type: 3}
   rocketTowerPrefab: {fileID: 4538651218321707369, guid: 00a3e21f7ca30854ba5f897fd2e704a7, type: 3}
+  laserTowerPrefab: {fileID: 0}
   cannonCost: 50
   rocketCost: 80
+  laserCost: 150
   clickRadius: 0.65
   buildEffectPrefab: {fileID: 7050366133585093951, guid: 0b8fadd66a0032e4195603a3f06036e0, type: 3}
   baseRenderer: {fileID: 1509304130}

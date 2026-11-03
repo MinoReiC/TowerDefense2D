@@ -44,6 +44,11 @@ namespace TowerDefense.Towers
         [Header("Range Visualizer")]
         [SerializeField] private SpriteRenderer rangeRenderer;
 
+        [Header("Laser Beam Visualizer (Continuous Ray)")]
+        [SerializeField] private LineRenderer laserLineRenderer;
+        [SerializeField] private SpriteRenderer laserMuzzleGlow;
+        [SerializeField] private SpriteRenderer laserImpactGlow;
+
         [Header("Visual Gizmos")]
         [SerializeField] private Color rangeGizmoColor = new Color(1f, 0.2f, 0.2f, 0.35f);
 
@@ -54,6 +59,7 @@ namespace TowerDefense.Towers
         private bool _isRangeIndicatorVisible = false;
 
         private string _currentProjectileSpriteName = "towerDefense_tile273";
+        private string _bulletAnimPrefix = "";
         private float _currentProjectileScale = 1f;
         private float _currentProjectileSpeed = 12f;
 
@@ -162,6 +168,90 @@ namespace TowerDefense.Towers
                 rangeRenderer.enabled = false;
                 UpdateRangeIndicatorScale();
             }
+
+            SetupLaserBeamComponents();
+        }
+
+        private void SetupLaserBeamComponents()
+        {
+            if (laserLineRenderer == null)
+            {
+                Transform foundLaser = transform.Find("LaserBeam");
+                if (foundLaser != null)
+                {
+                    laserLineRenderer = foundLaser.GetComponent<LineRenderer>();
+                }
+                else
+                {
+                    GameObject laserGO = new GameObject("LaserBeam");
+                    laserGO.transform.SetParent(transform, false);
+                    laserLineRenderer = laserGO.AddComponent<LineRenderer>();
+                }
+            }
+
+            if (laserLineRenderer != null)
+            {
+                laserLineRenderer.useWorldSpace = true;
+                laserLineRenderer.positionCount = 2;
+                laserLineRenderer.sortingOrder = 4; // Trên ụ súng
+                // Shader sprites default
+                Shader spriteShader = Shader.Find("Sprites/Default");
+                if (spriteShader == null) spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
+                if (spriteShader != null)
+                {
+                    Material laserMat = new Material(spriteShader);
+                    laserMat.color = Color.white;
+                    laserLineRenderer.material = laserMat;
+                }
+                laserLineRenderer.startWidth = 0.22f;
+                laserLineRenderer.endWidth = 0.16f;
+                laserLineRenderer.startColor = new Color(0.92f, 0.45f, 1f, 1f); // Tím hồng neon
+                laserLineRenderer.endColor   = new Color(0.70f, 0.15f, 0.95f, 0.90f);
+                laserLineRenderer.enabled = false;
+            }
+
+            // Điểm sáng đầu nòng (Muzzle Glow)
+            if (laserMuzzleGlow == null)
+            {
+                Transform fM = transform.Find("LaserMuzzleGlow");
+                if (fM != null) laserMuzzleGlow = fM.GetComponent<SpriteRenderer>();
+                else
+                {
+                    GameObject mGO = new GameObject("LaserMuzzleGlow");
+                    mGO.transform.SetParent(transform, false);
+                    laserMuzzleGlow = mGO.AddComponent<SpriteRenderer>();
+                }
+            }
+            if (laserMuzzleGlow != null)
+            {
+                laserMuzzleGlow.sprite = CyberAssetLoader.GetSprite("towerDefense_tile275");
+                laserMuzzleGlow.color = new Color(1f, 0.70f, 1f, 0.95f);
+                laserMuzzleGlow.sortingOrder = 5;
+                laserMuzzleGlow.transform.localScale = Vector3.one * 0.45f;
+                laserMuzzleGlow.enabled = false;
+            }
+
+            // Điểm nổ sáng tại mục tiêu (Impact Glow)
+            if (laserImpactGlow == null)
+            {
+                Transform fI = transform.Find("LaserImpactGlow");
+                if (fI != null) laserImpactGlow = fI.GetComponent<SpriteRenderer>();
+                else
+                {
+                    GameObject iGO = new GameObject("LaserImpactGlow");
+                    iGO.transform.SetParent(transform, false);
+                    laserImpactGlow = iGO.AddComponent<SpriteRenderer>();
+                }
+            }
+            if (laserImpactGlow != null)
+            {
+                laserImpactGlow.sprite = CyberAssetLoader.GetSprite("towerDefense_tile297");
+                if (laserImpactGlow.sprite == null) laserImpactGlow.sprite = CyberAssetLoader.GetSprite("towerDefense_tile275");
+                laserImpactGlow.color = new Color(1f, 0.85f, 1f, 1f);
+                laserImpactGlow.sortingOrder = 5;
+                laserImpactGlow.transform.localScale = Vector3.one * 0.65f;
+                laserImpactGlow.enabled = false;
+            }
         }
 
         public void UpdateRangeIndicatorScale()
@@ -227,9 +317,10 @@ namespace TowerDefense.Towers
 
                     baseSpriteName = "towerDefense_tile181"; // Đế Lục Giác Cyber Cấp 1
                     gunSpriteName  = "cannon_1barrel_lvl1";
-                    _currentProjectileSpriteName = "towerDefense_tile273";
-                    _currentProjectileScale = 0.85f;
-                    _currentProjectileSpeed = 12f;
+                    _bulletAnimPrefix = "bullet_cannon_lvl1"; // Animation 4 frame xoay tia
+                    _currentProjectileSpriteName = "bullet_cannon_lvl1_frame1";
+                    _currentProjectileScale = 0.88f;
+                    _currentProjectileSpeed = 13f;
                 }
                 else if (level == 2)
                 {
@@ -246,11 +337,12 @@ namespace TowerDefense.Towers
                     baseSpriteName = "towerDefense_tile180"; // Đế Vòng Tròn Năng Lượng Cấp 2
                     gunSpriteName  = "cannon_1barrel_lvl2";
                     gunScale       = 1.08f;
-                    _currentProjectileSpriteName = "towerDefense_tile273";
-                    _currentProjectileScale = 1.0f;
-                    _currentProjectileSpeed = 13.5f;
+                    _bulletAnimPrefix = "bullet_cannon_lvl2"; // Animation 4 frame xoay tia vàng kim
+                    _currentProjectileSpriteName = "bullet_cannon_lvl2_frame1";
+                    _currentProjectileScale = 1.02f;
+                    _currentProjectileSpeed = 14.5f;
                 }
-                else // Level 3 (MAX)
+                else // Level 3 (MAX) - ĐẠN LAZE MẶT TRỜI LƯỢNG TỬ (4 FRAME CHUẨN THEO ẢNH BẠN GỬI)
                 {
                     minDamage        = 60;
                     maxDamage        = 88;
@@ -265,9 +357,10 @@ namespace TowerDefense.Towers
                     baseSpriteName = "towerDefense_tile182"; // Đế Bát Giác Hạng Nặng Cấp 3
                     gunSpriteName  = "cannon_1barrel_lvl3";
                     gunScale       = 1.16f;
-                    _currentProjectileSpriteName = "towerDefense_tile274"; // Đạn Vàng Kim Titan
-                    _currentProjectileScale = 1.12f;
-                    _currentProjectileSpeed = 15f;
+                    _bulletAnimPrefix = "bullet_quantum_lvl3"; // 4 Frame Mặt Trời Lượng Tử: Rời nòng -> Gia tốc -> Cực đại -> Nổ
+                    _currentProjectileSpriteName = "bullet_quantum_lvl3_frame1";
+                    _currentProjectileScale = 1.15f;
+                    _currentProjectileSpeed = 16f;
                 }
             }
             else if (towerType == TowerType.Rocket)
@@ -288,6 +381,7 @@ namespace TowerDefense.Towers
 
                     baseSpriteName = "towerDefense_tile182"; // Đế Bát Giác Hạng Nặng
                     gunSpriteName  = "towerDefense_tile204"; // Bệ 2 Tên Lửa
+                    _bulletAnimPrefix = "bullet_dual_lvl1"; // Animation 4 frame
                     _currentProjectileSpriteName = "towerDefense_tile251";
                     _currentProjectileScale = 0.90f;
                 }
@@ -307,6 +401,7 @@ namespace TowerDefense.Towers
                     baseSpriteName = "towerDefense_tile180"; // Đế Vòng Tròn Năng Lượng
                     gunSpriteName  = "turret_missile_lvl2"; // Bệ 4 Tên Lửa Liên Hoàn
                     gunScale       = 1.10f;
+                    _bulletAnimPrefix = "bullet_dual_lvl2"; // Animation 4 frame
                     _currentProjectileSpriteName = "towerDefense_tile251";
                     _currentProjectileScale = 1.05f;
                 }
@@ -326,12 +421,14 @@ namespace TowerDefense.Towers
                     baseSpriteName = "towerDefense_tile183"; // Đế Kim Cương Tối Thượng
                     gunSpriteName  = "towerDefense_tile206"; // Siêu Tên Lửa Đạn Đạo Cỡ Đại
                     gunScale       = 1.20f;
+                    _bulletAnimPrefix = "bullet_dual_lvl3"; // Animation 4 frame
                     _currentProjectileSpriteName = "towerDefense_tile252"; // Đầu đạn hạng nặng
                     _currentProjectileScale = 1.20f;
                 }
             }
-            else // 🔮 TowerType.Laser (THÁP TÍM MỚI — Sát thương siêu to, Xuyên giáp tối thượng, Mắc tiền!)
+            else // 🔮 TowerType.Laser (THÁP TÍM MỚI — Sát thương siêu to, Xuyên giáp tối thượng, BẮN TIA LAZE)
             {
+                _bulletAnimPrefix = "";
                 if (level == 1)
                 {
                     minDamage        = 85;
@@ -347,7 +444,7 @@ namespace TowerDefense.Towers
                     baseSpriteName = "towerDefense_tile183"; // Đế Kim Cương Cyber
                     gunSpriteName  = "turret_laser_lvl1";    // Ụ Súng Tím Lăng Kính
                     baseColor      = new Color(0.95f, 0.85f, 1f, 1f);
-                    _currentProjectileSpriteName = "towerDefense_tile275"; // Quả Cầu Năng Lượng Tím
+                    _currentProjectileSpriteName = "towerDefense_tile275";
                     _currentProjectileScale = 1.05f;
                     _currentProjectileSpeed = 14f;
                 }
@@ -439,15 +536,89 @@ namespace TowerDefense.Towers
             {
                 RotateTurretTowardsTarget();
 
-                if (fireCountdown <= 0f)
+                // 🔮 Riêng Tháp Laser Tím: Chiếu Tia Laze liên tục thiêu đốt mục tiêu
+                if (towerType == TowerType.Laser)
                 {
-                    Shoot();
-                    fireCountdown = 1f / fireRate;
+                    UpdateContinuousLaserBeam();
                 }
+                else
+                {
+                    DisableLaserBeam();
+                    if (fireCountdown <= 0f)
+                    {
+                        Shoot();
+                        fireCountdown = 1f / fireRate;
+                    }
+                }
+            }
+            else
+            {
+                DisableLaserBeam();
             }
 
             if (fireCountdown > 0f)
                 fireCountdown -= Time.deltaTime;
+        }
+
+        private void DisableLaserBeam()
+        {
+            if (laserLineRenderer != null && laserLineRenderer.enabled) laserLineRenderer.enabled = false;
+            if (laserMuzzleGlow != null && laserMuzzleGlow.enabled) laserMuzzleGlow.enabled = false;
+            if (laserImpactGlow != null && laserImpactGlow.enabled) laserImpactGlow.enabled = false;
+        }
+
+        private void UpdateContinuousLaserBeam()
+        {
+            if (currentTarget == null)
+            {
+                DisableLaserBeam();
+                return;
+            }
+
+            Vector3 startPos = firePoint != null ? firePoint.position : (turretGun != null ? turretGun.position : transform.position);
+            Vector3 endPos = currentTarget.position;
+            startPos.z = 0;
+            endPos.z = 0;
+
+            // Kích hoạt và render tia Laze Tím
+            if (laserLineRenderer != null)
+            {
+                laserLineRenderer.enabled = true;
+                laserLineRenderer.SetPosition(0, startPos);
+                laserLineRenderer.SetPosition(1, endPos);
+
+                // Hiệu ứng tia laze rung nhẹ theo năng lượng
+                float jitter = Mathf.Sin(Time.time * 30f) * 0.03f;
+                float width = (0.24f + jitter) * (level == 3 ? 1.45f : (level == 2 ? 1.25f : 1.0f));
+                laserLineRenderer.startWidth = width;
+                laserLineRenderer.endWidth = width * 0.75f;
+            }
+
+            // Điểm sáng đầu nòng
+            if (laserMuzzleGlow != null)
+            {
+                laserMuzzleGlow.enabled = true;
+                laserMuzzleGlow.transform.position = startPos;
+                laserMuzzleGlow.transform.localScale = Vector3.one * (0.45f + Mathf.Sin(Time.time * 25f) * 0.08f);
+            }
+
+            // Điểm sáng va chạm tại quái
+            if (laserImpactGlow != null)
+            {
+                laserImpactGlow.enabled = true;
+                laserImpactGlow.transform.position = endPos;
+                laserImpactGlow.transform.localScale = Vector3.one * (0.65f + Mathf.Cos(Time.time * 25f) * 0.12f);
+                laserImpactGlow.transform.Rotate(0, 0, 180f * Time.deltaTime);
+            }
+
+            // Gây sát thương liên tục theo thời gian thực (DPS)
+            float dps = damage; // damage mỗi giây
+            float damageThisFrame = dps * Time.deltaTime;
+            Enemy enemy = currentTarget.GetComponent<Enemy>();
+            if (enemy != null && !enemy.IsDead)
+            {
+                enemy.TakeDamage(damageThisFrame, armorPenetration);
+            }
         }
 
         private void UpdateTarget()
@@ -512,12 +683,25 @@ namespace TowerDefense.Towers
             GameObject projGO = Instantiate(bulletPrefab, spawnPos, spawnRot);
             Sprite projSprite = CyberAssetLoader.GetSprite(_currentProjectileSpriteName);
 
-            // Bắn đạn đơn mục tiêu (Pháo Đơn hoặc Tháp Laser Tím)
+            // Bắn đạn đơn mục tiêu (Pháo Đơn hoặc Pháo Đôi)
             Bullet bullet = projGO.GetComponent<Bullet>();
             if (bullet != null)
             {
                 bullet.SetProjectileVisual(projSprite, Color.white, _currentProjectileScale, _currentProjectileSpeed);
                 bullet.SetDamage(rolledDamage, armorPenetration, isCrit);
+
+                // Áp dụng Animation 4 frame (xoay lưỡi từ tính & hồ quang tia laze)
+                if (!string.IsNullOrEmpty(_bulletAnimPrefix))
+                {
+                    Sprite[] animFrames = CyberAssetLoader.GetBulletFrames(_bulletAnimPrefix);
+                    if (animFrames != null && animFrames.Length > 0)
+                    {
+                        // Đạn Cấp 3 Mặt Trời Lượng Tử xoay 18 fps + tự xoay 360 deg/s
+                        float fps = (level >= 3) ? 18f : 14f;
+                        bullet.SetAnimationFrames(animFrames, fps, level >= 3, 360f);
+                    }
+                }
+
                 if (currentTarget != null) bullet.Seek(currentTarget);
                 return;
             }

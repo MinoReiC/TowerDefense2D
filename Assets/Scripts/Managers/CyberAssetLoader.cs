@@ -55,6 +55,40 @@ namespace TowerDefense.Managers
         private static Sprite _emptySpotRingSprite;
         private static Sprite _emptySpotCenterSprite;
         private static Sprite _rangeCircleSprite;
+        private static Sprite _laserBeamSprite;
+        private static readonly Dictionary<string, Sprite[]> _bulletFramesCache = new Dictionary<string, Sprite[]>();
+
+        /// <summary>
+        /// Lấy chuỗi 4 frame cho từng loại đạn theo animation đường đạn (xoay hồ quang / lưỡi từ tính).
+        /// </summary>
+        public static Sprite[] GetBulletFrames(string prefix, int frameCount = 4)
+        {
+            if (string.IsNullOrEmpty(prefix)) return null;
+            if (_bulletFramesCache.TryGetValue(prefix, out Sprite[] cached) && cached != null && cached.Length == frameCount)
+            {
+                return cached;
+            }
+
+            Sprite[] frames = new Sprite[frameCount];
+            for (int i = 0; i < frameCount; i++)
+            {
+                string frameName = $"{prefix}_frame{i + 1}";
+                frames[i] = GetSprite(frameName);
+            }
+
+            _bulletFramesCache[prefix] = frames;
+            return frames;
+        }
+
+        /// <summary>
+        /// Lấy Sprite tia Laze Tím liền mạch (Beam).
+        /// </summary>
+        public static Sprite GetLaserBeamSprite()
+        {
+            if (_laserBeamSprite != null) return _laserBeamSprite;
+            _laserBeamSprite = GetSprite("laser_purple_beam");
+            return _laserBeamSprite;
+        }
 
         /// <summary>
         /// Tạo Sprite hình tròn bán trong suốt viền neon phát sáng sắc nét để hiển thị tầm đánh (Range Circle) của pháo.

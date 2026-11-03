@@ -155,6 +155,7 @@ MonoBehaviour:
   upgradeEffectPrefab: {fileID: 0}
   baseRenderer: {fileID: 3980668398414011782}
   gunRenderer: {fileID: 8256003006400311499}
+  rangeRenderer: {fileID: 0}
   rangeGizmoColor: {r: 1, g: 0.2, b: 0.2, a: 0.35}
 --- !u!1 &5255762101851650172
 GameObject:
