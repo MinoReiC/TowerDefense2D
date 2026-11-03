@@ -209,9 +209,9 @@ namespace TowerDefense.UI
                 if (s != null && s.HasTower) builtCount++;
             }
 
-            // 1. BẢNG HUD GÓC TRÊN BÊN TRÁI
-            GUILayout.BeginArea(new Rect(18, 18, 565, 168), boxStyle);
-            GUILayout.Space(8);
+            // 1. BẢNG HUD GÓC TRÊN BÊN TRÁI (Thiết kế gọn gàng tránh che ô xây tháp)
+            GUILayout.BeginArea(new Rect(18, 18, 470, 156), boxStyle);
+            GUILayout.Space(6);
 
             headerStyle.normal.textColor = new Color(1f, 0.88f, 0.2f);
             GUILayout.Label($"💰 VÀNG: {gold}    ❤️ MÁU: {hp}    🗼 THÁP: {builtCount}/{maxSpots}", headerStyle);
@@ -222,8 +222,8 @@ namespace TowerDefense.UI
             {
                 waveStyle.normal.textColor = new Color(0.35f, 1f, 0.45f);
                 string prepText = currentWave <= 0
-                    ? $"[{mapLabel}]  •  CHUẨN BỊ ({totalWaves} Đợt) — Chờ bấm SẴN SÀNG"
-                    : $"[{mapLabel}]  •  ĐÃ THẮNG ĐỢT {currentWave}/{totalWaves} — Chờ bấm TIẾP TỤC";
+                    ? $"[{mapLabel}]  •  CHUẨN BỊ ({totalWaves} Đợt) — Chờ SẴN SÀNG"
+                    : $"[{mapLabel}]  •  THẮNG ĐỢT {currentWave}/{totalWaves} — Chờ TIẾP TỤC";
                 GUILayout.Label(prepText, waveStyle);
             }
             else
@@ -236,11 +236,11 @@ namespace TowerDefense.UI
                 GUILayout.Label(waveText, waveStyle);
             }
 
-            GUILayout.Space(4);
+            GUILayout.Space(3);
 
             subStyle.normal.textColor = new Color(0.92f, 0.96f, 1f);
-            GUILayout.Label("• <b>Click ô bệ trống</b>: Pháo Đơn (70) / Tên Lửa (100) / Tháp Laser Tím (150)", subStyle);
-            GUILayout.Label("• <b>Click tháp đã xây</b>: NÂNG CẤP LÊN CẤP 2 & CẤP 3 (Đổi ụ súng & Tăng ST)", subStyle);
+            GUILayout.Label("• <b>Click ô bệ trống</b>: Pháo Đơn (70) / Tên Lửa (100) / Laser Tím (150)", subStyle);
+            GUILayout.Label("• <b>Click tháp đã xây</b>: NÂNG CẤP LÊN CẤP 2 & CẤP 3 (Tăng ST)", subStyle);
 
             GUILayout.EndArea();
 
