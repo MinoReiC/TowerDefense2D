@@ -196,6 +196,10 @@ namespace TowerDefense.Towers
         {
             isMenuOpen = false;
             isUpgradeMenuOpen = false;
+            if (currentTower != null)
+            {
+                currentTower.SetRangeVisible(false);
+            }
             ResetVisual();
         }
 
@@ -209,11 +213,21 @@ namespace TowerDefense.Towers
             isMenuOpen = true;
         }
 
-        // ─── Mở popup nâng cấp tháp ─────────────────────────────────────────
+        // ─── Mở popup nâng cấp tháp & hiện vòng tầm đánh ──────────────────
         private void OpenUpgradeMenu()
         {
             if (!HasTower || currentTower == null) return;
             isMenuOpen = false;
+
+            // Đóng tầm đánh của các tháp khác (nếu có)
+            Tower[] allTowers = Object.FindObjectsByType<Tower>(FindObjectsSortMode.None);
+            foreach (var t in allTowers)
+            {
+                if (t != null && t != currentTower) t.SetRangeVisible(false);
+            }
+
+            // Hiện vòng tầm đánh của pháo này
+            currentTower.SetRangeVisible(true);
 
             CalculatePopupRect(UPGRADE_POPUP_W, UPGRADE_POPUP_H);
             isUpgradeMenuOpen = true;
@@ -414,6 +428,10 @@ namespace TowerDefense.Towers
 
             GameManager.Instance.SpendGold(cost);
             currentTower.UpgradeToNextLevel(buildEffectPrefab);
+            if (currentTower != null)
+            {
+                currentTower.UpdateRangeIndicatorScale();
+            }
             CloseAllMenus();
         }
 

@@ -12,6 +12,7 @@ namespace TowerDefense.UI
         private GUIStyle subStyle;
         private GUIStyle boxStyle;
         private GUIStyle homeBtnStyle;
+        private GUIStyle pauseBtnStyle;
 
         // Victory & Defeat Popup Styles (separate styles, không mutate chung)
         private GUIStyle victoryBoxStyle;
@@ -20,6 +21,7 @@ namespace TowerDefense.UI
         private GUIStyle victoryDescStyle;
         private GUIStyle victoryBtnPrimary;
         private GUIStyle victoryBtnSecondary;
+        private GUIStyle pauseOverlayStyle;
 
         private bool stylesInitialized = false;
 
@@ -83,6 +85,23 @@ namespace TowerDefense.UI
             homeBtnStyle.hover.background  = MakeTex(2, 2, new Color(0.18f, 0.42f, 0.75f, 1f));
             homeBtnStyle.normal.textColor  = Color.white;
             homeBtnStyle.hover.textColor   = Color.white;
+
+            // Nút Tạm Dừng / Tiếp Tục
+            pauseBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                font = _fontSub,
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            pauseBtnStyle.normal.background = MakeTex(2, 2, new Color(0.18f, 0.45f, 0.20f, 0.95f));
+            pauseBtnStyle.hover.background  = MakeTex(2, 2, new Color(0.25f, 0.65f, 0.30f, 1f));
+            pauseBtnStyle.normal.textColor  = Color.white;
+            pauseBtnStyle.hover.textColor   = Color.white;
+
+            // Màn phủ đen mờ khi Tạm Dừng (Pause Overlay)
+            pauseOverlayStyle = new GUIStyle(GUI.skin.box);
+            pauseOverlayStyle.normal.background = MakeTex(2, 2, new Color(0f, 0f, 0f, 0.65f));
 
             // Box Popup chung
             victoryBoxStyle = new GUIStyle(GUI.skin.box);
@@ -173,6 +192,7 @@ namespace TowerDefense.UI
             bool hasWon     = spawner != null && spawner.HasWon;
             bool isReady    = spawner == null || spawner.IsPlayerReady;
             bool isGameOver = GameManager.Instance != null && GameManager.Instance.IsGameOver;
+            bool isPaused   = GameManager.Instance != null && GameManager.Instance.IsPaused;
 
             string activeScene = SceneManager.GetActiveScene().name;
             bool isLevel2 = activeScene == "Level2Scene";
@@ -224,16 +244,28 @@ namespace TowerDefense.UI
 
             GUILayout.EndArea();
 
-            // 2. NÚT VỀ MENU GÓC TRÊN BÊN PHẢI
+            // 2. NÚT VỀ MENU & NÚT TẠM DỪNG GÓC TRÊN BÊN PHẢI
             if (!hasWon && !isGameOver)
             {
-                float homeBtnW = 145f;
-                float homeBtnH = 42f;
-                Rect homeBtnRect = new Rect(Screen.width - homeBtnW - 18f, 18f, homeBtnW, homeBtnH);
+                float btnH = 42f;
+
+                // Nút VỀ MENU
+                float homeBtnW = 130f;
+                Rect homeBtnRect = new Rect(Screen.width - homeBtnW - 18f, 18f, homeBtnW, btnH);
                 if (GUI.Button(homeBtnRect, "VỀ MENU", homeBtnStyle))
                 {
+                    Time.timeScale = 1f;
                     MainMenuUI.OpenLevelSelectOnStart = true;
                     SceneManager.LoadScene("MainMenu");
+                }
+
+                // Nút TẠM DỪNG / TIẾP TỤC
+                float pauseBtnW = 145f;
+                Rect pauseBtnRect = new Rect(homeBtnRect.x - pauseBtnW - 10f, 18f, pauseBtnW, btnH);
+                string pauseLabel = isPaused ? "▶ TIẾP TỤC" : "⏸ TẠM DỪNG";
+                if (GUI.Button(pauseBtnRect, pauseLabel, pauseBtnStyle))
+                {
+                    GameManager.Instance.TogglePause();
                 }
             }
 
@@ -287,6 +319,58 @@ namespace TowerDefense.UI
             else if (isGameOver)
             {
                 DrawDefeatPopup(gold, currentWave, totalWaves, activeScene);
+            }
+            // 5. BẢNG TẠM DỪNG (KHI ĐANG PAUSE)
+            else if (isPaused)
+            {
+                DrawPauseMenu(activeScene);
+            }
+        }
+
+        private void DrawPauseMenu(string activeScene)
+        {
+            // Màn phủ làm mờ toàn màn hình
+            GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "", pauseOverlayStyle);
+
+            float w = Mathf.Min(480f, Screen.width - 40f);
+            float h = 330f;
+            float x = (Screen.width - w) / 2f;
+            float y = (Screen.height - h) / 2f;
+
+            Rect rect = new Rect(x, y, w, h);
+            GUI.Box(rect, "", victoryBoxStyle);
+
+            float padX = rect.x + 30f;
+            float padW = rect.width - 60f;
+            float curY = rect.y + 25f;
+
+            GUI.Label(new Rect(padX, curY, padW, 44f), "⏸ TRÒ CHƠI ĐANG TẠM DỪNG", victoryTitleStyle);
+            curY += 50f;
+
+            GUI.Label(new Rect(padX, curY, padW, 30f), "Mọi hành động và quái vật đang được dừng lại.", victoryDescStyle);
+            curY += 45f;
+
+            // Nút Tiếp Tục Chơi
+            if (GUI.Button(new Rect(padX, curY, padW, 50f), "▶ TIẾP TỤC CHƠI", victoryBtnPrimary))
+            {
+                GameManager.Instance.SetPaused(false);
+            }
+            curY += 60f;
+
+            // Nút Chơi Lại Màn Này
+            if (GUI.Button(new Rect(padX, curY, padW, 46f), "🔄 CHƠI LẠI MÀN NÀY", victoryBtnSecondary))
+            {
+                Time.timeScale = 1f;
+                SceneManager.LoadScene(activeScene);
+            }
+            curY += 54f;
+
+            // Nút Về Menu Chọn Màn
+            if (GUI.Button(new Rect(padX, curY, padW, 42f), "QUAY VỀ CHỌN MÀN CHƠI", homeBtnStyle))
+            {
+                Time.timeScale = 1f;
+                MainMenuUI.OpenLevelSelectOnStart = true;
+                SceneManager.LoadScene("MainMenu");
             }
         }
 

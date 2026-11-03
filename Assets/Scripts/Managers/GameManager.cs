@@ -15,9 +15,11 @@ namespace TowerDefense.Managers
         public int Gold { get; private set; }
         public int BaseHealth { get; private set; }
         public bool IsGameOver => BaseHealth <= 0;
+        public bool IsPaused { get; private set; } = false;
 
         public event Action<int> OnGoldChanged;
         public event Action<int> OnBaseHealthChanged;
+        public event Action<bool> OnPauseStateChanged;
 
         private void Awake()
         {
@@ -49,9 +51,31 @@ namespace TowerDefense.Managers
 
             Gold = startingGold;
             BaseHealth = baseHealth;
+            IsPaused = false;
+            Time.timeScale = 1f;
 
             // Đảm bảo các đế trụ (tile180..183) không bao giờ hiện cố định làm vật trang trí trên bản đồ
             CleanupFixedTurretBaseDecorations();
+        }
+
+        private void OnDestroy()
+        {
+            // Reset timeScale khi chuyển scene
+            Time.timeScale = 1f;
+        }
+
+        public void TogglePause()
+        {
+            SetPaused(!IsPaused);
+        }
+
+        public void SetPaused(bool paused)
+        {
+            if (IsGameOver) return;
+            IsPaused = paused;
+            Time.timeScale = IsPaused ? 0f : 1f;
+            OnPauseStateChanged?.Invoke(IsPaused);
+            Debug.Log($"<color=cyan>[GameManager] Trạng thái tạm dừng: {IsPaused} (Time.timeScale = {Time.timeScale})</color>");
         }
 
         private void CleanupFixedTurretBaseDecorations()

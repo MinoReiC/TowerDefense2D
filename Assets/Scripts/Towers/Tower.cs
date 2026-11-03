@@ -41,6 +41,9 @@ namespace TowerDefense.Towers
         [SerializeField] private SpriteRenderer baseRenderer;
         [SerializeField] private SpriteRenderer gunRenderer;
 
+        [Header("Range Visualizer")]
+        [SerializeField] private SpriteRenderer rangeRenderer;
+
         [Header("Visual Gizmos")]
         [SerializeField] private Color rangeGizmoColor = new Color(1f, 0.2f, 0.2f, 0.35f);
 
@@ -48,6 +51,7 @@ namespace TowerDefense.Towers
         private float fireCountdown   = 0f;
         private float _targetTimer    = 0f;
         private const float TARGET_INTERVAL = 0.18f;
+        private bool _isRangeIndicatorVisible = false;
 
         private string _currentProjectileSpriteName = "towerDefense_tile273";
         private float _currentProjectileScale = 1f;
@@ -129,8 +133,58 @@ namespace TowerDefense.Towers
             if (turretGun != null && gunRenderer == null)
                 gunRenderer = turretGun.GetComponent<SpriteRenderer>();
 
+            SetupRangeIndicator();
             ApplyLevelStatsAndVisuals();
         }
+
+        private void SetupRangeIndicator()
+        {
+            if (rangeRenderer == null)
+            {
+                Transform foundRange = transform.Find("RangeIndicator");
+                if (foundRange != null)
+                {
+                    rangeRenderer = foundRange.GetComponent<SpriteRenderer>();
+                }
+                else
+                {
+                    GameObject rGO = new GameObject("RangeIndicator");
+                    rGO.transform.SetParent(transform, false);
+                    rGO.transform.localPosition = Vector3.zero;
+                    rangeRenderer = rGO.AddComponent<SpriteRenderer>();
+                }
+            }
+
+            if (rangeRenderer != null)
+            {
+                rangeRenderer.sprite = CyberAssetLoader.GetRangeCircleSprite();
+                rangeRenderer.sortingOrder = 1; // Nằm trên nền đất, dưới đế pháo (order 2) và nòng súng (order 3)
+                rangeRenderer.enabled = false;
+                UpdateRangeIndicatorScale();
+            }
+        }
+
+        public void UpdateRangeIndicatorScale()
+        {
+            if (rangeRenderer != null)
+            {
+                // RangeCircleSprite có bán kính là 1 unit (đường kính 2 units tương ứng scale 2*attackRange)
+                float diameter = attackRange * 2f;
+                rangeRenderer.transform.localScale = new Vector3(diameter, diameter, 1f);
+            }
+        }
+
+        public void SetRangeVisible(bool visible)
+        {
+            _isRangeIndicatorVisible = visible;
+            if (rangeRenderer != null)
+            {
+                rangeRenderer.enabled = visible;
+                if (visible) UpdateRangeIndicatorScale();
+            }
+        }
+
+        public bool IsRangeVisible => _isRangeIndicatorVisible;
 
         /// <summary>
         /// Khởi tạo tháp theo đúng loại (Cannon, Rocket, hoặc Laser Tím) ở Cấp 1.
@@ -364,6 +418,11 @@ namespace TowerDefense.Towers
                 gunRenderer.color = gunColor;
                 gunRenderer.sortingOrder = 3;
                 gunRenderer.enabled = true;
+            }
+
+            if (_isRangeIndicatorVisible)
+            {
+                UpdateRangeIndicatorScale();
             }
         }
 

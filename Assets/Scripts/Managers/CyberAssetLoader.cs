@@ -54,6 +54,60 @@ namespace TowerDefense.Managers
 
         private static Sprite _emptySpotRingSprite;
         private static Sprite _emptySpotCenterSprite;
+        private static Sprite _rangeCircleSprite;
+
+        /// <summary>
+        /// Tạo Sprite hình tròn bán trong suốt viền neon phát sáng sắc nét để hiển thị tầm đánh (Range Circle) của pháo.
+        /// Kích thước texture 256x256, đường kính hình tròn là 200px (100px bán kính ở pixelsPerUnit = 100 => bán kính chuẩn 1 unit trên world space).
+        /// Khi gắn vào GameObject, chỉ cần set localScale = Vector3.one * (attackRange * 2f).
+        /// </summary>
+        public static Sprite GetRangeCircleSprite()
+        {
+            if (_rangeCircleSprite != null) return _rangeCircleSprite;
+
+            int size = 256;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            Color[] pixels = new Color[size * size];
+            Vector2 center = new Vector2(size * 0.5f, size * 0.5f);
+            float radius = 100f; // Bán kính 100 pixels
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    Vector2 p = new Vector2(x + 0.5f, y + 0.5f) - center;
+                    float dist = p.magnitude;
+                    float diff = dist - radius;
+
+                    Color col = Color.clear;
+
+                    if (dist <= radius)
+                    {
+                        // Vùng bên trong: gradient mờ nhẹ (vùng phủ tầm đánh)
+                        float innerAlpha = Mathf.Lerp(0.04f, 0.16f, dist / radius);
+                        col = new Color(0.20f, 0.85f, 1f, innerAlpha);
+                    }
+
+                    // Viền phát sáng neon (Outer rim glow)
+                    if (Mathf.Abs(diff) <= 3.5f)
+                    {
+                        float rimAlpha = 1f - (Mathf.Abs(diff) / 3.5f);
+                        Color rimCol = new Color(0.40f, 0.95f, 1f, rimAlpha * 0.85f);
+                        col = Color.Lerp(col, rimCol, rimAlpha);
+                    }
+
+                    pixels[y * size + x] = col;
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply();
+            // pixelsPerUnit = 200f (vì đường kính 200px => tương đương đúng 1.0 unit bán kính!)
+            _rangeCircleSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 200f);
+            _rangeCircleSprite.name = "TowerRangeCircle";
+            return _rangeCircleSprite;
+        }
 
         /// <summary>
         /// Tạo Sprite vòng tròn nét đứt phát sáng nhẹ nhàng cho Ô Đặt Pháo khi CHƯA MUA TRỤ
