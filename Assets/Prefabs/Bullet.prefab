@@ -173,3 +173,7 @@ MonoBehaviour:
   damage: 20
   armorPenetration: 0.15
   lifeTime: 5
+  animationFrames: []
+  frameRate: 18
+  rotateContinuously: 0
+  spinSpeed: 360

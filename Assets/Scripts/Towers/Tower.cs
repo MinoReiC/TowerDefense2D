@@ -317,9 +317,9 @@ namespace TowerDefense.Towers
 
                     baseSpriteName = "towerDefense_tile181"; // Đế Lục Giác Cyber Cấp 1
                     gunSpriteName  = "cannon_1barrel_lvl1";
-                    _bulletAnimPrefix = "bullet_cannon_lvl1"; // Animation 4 frame xoay tia
+                    _bulletAnimPrefix = "bullet_cannon_lvl1"; // 4 frame Mặt Trời Laze thu nhỏ thanh mảnh
                     _currentProjectileSpriteName = "bullet_cannon_lvl1_frame1";
-                    _currentProjectileScale = 0.88f;
+                    _currentProjectileScale = 0.72f;
                     _currentProjectileSpeed = 13f;
                 }
                 else if (level == 2)
@@ -337,9 +337,9 @@ namespace TowerDefense.Towers
                     baseSpriteName = "towerDefense_tile180"; // Đế Vòng Tròn Năng Lượng Cấp 2
                     gunSpriteName  = "cannon_1barrel_lvl2";
                     gunScale       = 1.08f;
-                    _bulletAnimPrefix = "bullet_cannon_lvl2"; // Animation 4 frame xoay tia vàng kim
+                    _bulletAnimPrefix = "bullet_cannon_lvl2"; // 4 frame Mặt Trời Laze vừa phải
                     _currentProjectileSpriteName = "bullet_cannon_lvl2_frame1";
-                    _currentProjectileScale = 1.02f;
+                    _currentProjectileScale = 0.92f;
                     _currentProjectileSpeed = 14.5f;
                 }
                 else // Level 3 (MAX) - ĐẠN LAZE MẶT TRỜI LƯỢNG TỬ (4 FRAME CHUẨN THEO ẢNH BẠN GỬI)
@@ -357,9 +357,9 @@ namespace TowerDefense.Towers
                     baseSpriteName = "towerDefense_tile182"; // Đế Bát Giác Hạng Nặng Cấp 3
                     gunSpriteName  = "cannon_1barrel_lvl3";
                     gunScale       = 1.16f;
-                    _bulletAnimPrefix = "bullet_quantum_lvl3"; // 4 Frame Mặt Trời Lượng Tử: Rời nòng -> Gia tốc -> Cực đại -> Nổ
+                    _bulletAnimPrefix = "bullet_quantum_lvl3"; // 4 Frame Mặt Trời Lượng Tử Cực Đại: Rời nòng -> Gia tốc -> Cực đại -> Nổ
                     _currentProjectileSpriteName = "bullet_quantum_lvl3_frame1";
-                    _currentProjectileScale = 1.15f;
+                    _currentProjectileScale = 1.25f;
                     _currentProjectileSpeed = 16f;
                 }
             }
