@@ -511,67 +511,93 @@ namespace TowerDefense.Towers
             if (_stylesInit && _boxStyle != null && _boxStyle.normal.background != null && _btnPurple != null) return;
             _stylesInit = true;
 
+            Color gold = new Color(0.95f, 0.74f, 0.27f);
+
             _boxStyle = new GUIStyle(GUI.skin.box);
-            _boxStyle.normal.background = MakeTex(2, 2, new Color(0.08f, 0.08f, 0.14f, 0.96f));
-            _boxStyle.border = new RectOffset(8, 8, 8, 8);
+            _boxStyle.normal.background = MakeRounded(48, 14, new Color(0.26f, 0.16f, 0.10f, 0.98f), new Color(0.13f, 0.08f, 0.05f, 0.98f), gold, 2);
+            _boxStyle.border = new RectOffset(16, 16, 16, 16);
 
             _titleStyle = new GUIStyle(GUI.skin.label);
             _titleStyle.fontStyle = FontStyle.Bold;
             _titleStyle.fontSize  = 16;
-            _titleStyle.normal.textColor = new Color(1f, 0.92f, 0.45f, 1f);
+            _titleStyle.normal.textColor = new Color(1f, 0.90f, 0.40f, 1f);
 
             _subTitleStyle = new GUIStyle(GUI.skin.label);
             _subTitleStyle.fontSize = 12;
-            _subTitleStyle.normal.textColor = new Color(0.9f, 0.95f, 1f, 0.95f);
+            _subTitleStyle.normal.textColor = new Color(0.95f, 0.92f, 0.85f, 0.95f);
 
-            // Nút Pháo Đơn Cyber (xanh lá)
-            _btnGreen = new GUIStyle(GUI.skin.button);
-            _btnGreen.fontStyle = FontStyle.Bold;
-            _btnGreen.fontSize  = 14;
-            _btnGreen.normal.background  = MakeTex(2, 2, new Color(0.10f, 0.55f, 0.10f, 0.96f));
-            _btnGreen.hover.background   = MakeTex(2, 2, new Color(0.18f, 0.80f, 0.18f, 1f));
-            _btnGreen.active.background  = MakeTex(2, 2, new Color(0.04f, 0.35f, 0.04f, 1f));
-            _btnGreen.normal.textColor   = Color.white;
-            _btnGreen.hover.textColor    = Color.white;
+            // Nút Pháo Đơn Cyber (xanh lá bo góc viền vàng)
+            _btnGreen = CreateButtonStyle(14, new Color(0.38f, 0.82f, 0.26f), new Color(0.14f, 0.50f, 0.12f), gold, Color.white);
 
-            // Nút Pháo Tên Lửa (xanh dương)
-            _btnBlue = new GUIStyle(GUI.skin.button);
-            _btnBlue.fontStyle = FontStyle.Bold;
-            _btnBlue.fontSize  = 14;
-            _btnBlue.normal.background  = MakeTex(2, 2, new Color(0.08f, 0.30f, 0.72f, 0.96f));
-            _btnBlue.hover.background   = MakeTex(2, 2, new Color(0.18f, 0.48f, 1f,    1f));
-            _btnBlue.active.background  = MakeTex(2, 2, new Color(0.04f, 0.18f, 0.50f, 1f));
-            _btnBlue.normal.textColor   = Color.white;
-            _btnBlue.hover.textColor    = Color.white;
+            // Nút Pháo Tên Lửa (xanh dương bo góc viền vàng)
+            _btnBlue = CreateButtonStyle(14, new Color(0.30f, 0.58f, 0.92f), new Color(0.12f, 0.30f, 0.62f), gold, Color.white);
 
-            // Nút Tháp Laser/Plasma Tím (Tím Hoàng Gia Neon)
-            _btnPurple = new GUIStyle(GUI.skin.button);
-            _btnPurple.fontStyle = FontStyle.Bold;
-            _btnPurple.fontSize  = 14;
-            _btnPurple.normal.background  = MakeTex(2, 2, new Color(0.45f, 0.12f, 0.68f, 0.97f));
-            _btnPurple.hover.background   = MakeTex(2, 2, new Color(0.65f, 0.22f, 0.92f, 1f));
-            _btnPurple.active.background  = MakeTex(2, 2, new Color(0.32f, 0.06f, 0.50f, 1f));
-            _btnPurple.normal.textColor   = new Color(1f, 0.94f, 1f, 1f);
-            _btnPurple.hover.textColor    = Color.white;
+            // Nút Tháp Laser/Plasma Tím (Tím Hoàng Gia bo góc viền vàng)
+            _btnPurple = CreateButtonStyle(14, new Color(0.65f, 0.22f, 0.92f), new Color(0.35f, 0.08f, 0.52f), gold, new Color(1f, 0.94f, 1f, 1f));
 
-            // Nút Nâng Cấp Level 2 & 3 (Vàng Cam)
-            _btnYellow = new GUIStyle(GUI.skin.button);
-            _btnYellow.fontStyle = FontStyle.Bold;
-            _btnYellow.fontSize  = 14;
-            _btnYellow.normal.background  = MakeTex(2, 2, new Color(0.85f, 0.55f, 0.05f, 0.96f));
-            _btnYellow.hover.background   = MakeTex(2, 2, new Color(1f,    0.72f, 0.15f, 1f));
-            _btnYellow.active.background  = MakeTex(2, 2, new Color(0.60f, 0.35f, 0.02f, 1f));
-            _btnYellow.normal.textColor   = Color.white;
-            _btnYellow.hover.textColor    = Color.white;
+            // Nút Nâng Cấp Level 2 & 3 (Cam Vàng bo góc viền vàng)
+            _btnYellow = CreateButtonStyle(14, new Color(1f, 0.68f, 0.15f), new Color(0.70f, 0.35f, 0.04f), gold, Color.white);
 
-            // Nút Huỷ (đỏ tối)
-            _btnCancel = new GUIStyle(GUI.skin.button);
-            _btnCancel.fontStyle = FontStyle.Bold;
-            _btnCancel.fontSize = 12;
-            _btnCancel.normal.background = MakeTex(2, 2, new Color(0.45f, 0.08f, 0.08f, 0.92f));
-            _btnCancel.hover.background  = MakeTex(2, 2, new Color(0.72f, 0.12f, 0.12f, 1f));
-            _btnCancel.normal.textColor  = new Color(1f, 0.75f, 0.75f, 1f);
-            _btnCancel.hover.textColor   = Color.white;
+            // Nút Huỷ (đỏ gỗ bo góc viền vàng)
+            _btnCancel = CreateButtonStyle(12, new Color(0.75f, 0.22f, 0.18f), new Color(0.42f, 0.10f, 0.10f), gold, new Color(1f, 0.90f, 0.90f));
+        }
+
+        private static GUIStyle CreateButtonStyle(int fontSize, Color top, Color bottom, Color border, Color text)
+        {
+            GUIStyle st = new GUIStyle(GUI.skin.button)
+            {
+                fontStyle = FontStyle.Bold,
+                fontSize = fontSize,
+                alignment = TextAnchor.MiddleCenter
+            };
+            st.normal.background = MakeRounded(48, 12, top, bottom, border, 2);
+            st.hover.background  = MakeRounded(48, 12, Color.Lerp(top, Color.white, 0.25f), Color.Lerp(bottom, Color.white, 0.18f), new Color(1f, 0.92f, 0.5f), 2);
+            st.active.background = MakeRounded(48, 12, Color.Lerp(bottom, Color.black, 0.15f), Color.Lerp(bottom, Color.black, 0.35f), border, 2);
+            st.border  = new RectOffset(14, 14, 14, 14);
+            st.padding = new RectOffset(4, 4, 2, 2);
+            st.margin  = new RectOffset(0, 0, 0, 0);
+
+            st.normal.textColor  = text;
+            st.hover.textColor   = Color.white;
+            st.active.textColor  = text;
+            st.focused.textColor = text;
+            return st;
+        }
+
+        private static Texture2D MakeRounded(int size, int radius, Color top, Color bottom, Color border, int borderWidth)
+        {
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.filterMode = FilterMode.Bilinear;
+            Color[] pix = new Color[size * size];
+            float half = size * 0.5f;
+            float inner = half - radius;
+
+            for (int y = 0; y < size; y++)
+            {
+                float t = y / (float)(size - 1);
+                Color fill = Color.Lerp(bottom, top, t);
+                for (int x = 0; x < size; x++)
+                {
+                    float px = Mathf.Abs(x + 0.5f - half) - inner;
+                    float py = Mathf.Abs(y + 0.5f - half) - inner;
+                    float outside = new Vector2(Mathf.Max(px, 0f), Mathf.Max(py, 0f)).magnitude;
+                    float d = outside + Mathf.Min(Mathf.Max(px, py), 0f) - radius;
+                    float alpha = Mathf.Clamp01(0.5f - d);
+
+                    Color c = fill;
+                    if (d > -borderWidth)
+                        c = border;
+                    else if (d > -borderWidth - 2f)
+                        c = Color.Lerp(fill, Color.white, 0.14f);
+
+                    c.a *= alpha;
+                    pix[y * size + x] = c;
+                }
+            }
+            tex.SetPixels(pix);
+            tex.Apply();
+            return tex;
         }
 
         private static Texture2D MakeTex(int w, int h, Color col)
