@@ -54,19 +54,37 @@ namespace TowerDefense.Managers
             IsPaused = false;
             Time.timeScale = 1f;
 
-            // Đảm bảo các đế trụ (tile180..183) không bao giờ hiện cố định làm vật trang trí trên bản đồ
+            // Đảm bảo các đế trụ và vật trang trí pixel cũ được dọn sạch
             CleanupFixedTurretBaseDecorations();
 
-            // Thiết lập nền đồ họa vẽ tay chuẩn Kingdom Rush cho Map 1 (SampleScene)
-            if (sceneName == "SampleScene" || sceneName == "Map1Scene" || sceneName == "Level1Scene")
-            {
-                SetupMap1Background();
-            }
+            // Thiết lập nền đồ họa vẽ tay chuẩn Kingdom Rush cho cả Map 1, Map 2 và Map 3
+            SetupMapBackground(sceneName);
         }
 
-        private void SetupMap1Background()
+        private void SetupMapBackground(string sceneName)
         {
-            // 1. Tắt TilemapRenderer cũ (nền ô vuông pixel) để hiển thị bản đồ vẽ tay mịn màng
+            string bgResourceName = "Map1_Battlefield_BG";
+            string bgObjectName   = "Map1_Background";
+            float orthoSize       = 5.0f;
+
+            if (sceneName == "Level2Scene" || sceneName == "Map2Scene")
+            {
+                bgResourceName = "Map2_Battlefield_BG";
+                bgObjectName   = "Map2_Background";
+                orthoSize      = 6.8f;
+            }
+            else if (sceneName == "Level3Scene" || sceneName == "Map3Scene")
+            {
+                bgResourceName = "Map3_Battlefield_BG";
+                bgObjectName   = "Map3_Background";
+                orthoSize      = 7.2f;
+            }
+            else if (sceneName != "SampleScene" && sceneName != "Map1Scene" && sceneName != "Level1Scene")
+            {
+                return;
+            }
+
+            // 1. Tắt TilemapRenderer cũ (nền ô vuông pixel) và Decorations cũ để hiển thị bản đồ vẽ tay mịn màng
             GameObject tilemapObj = GameObject.Find("Tilemap");
             if (tilemapObj != null)
             {
@@ -74,22 +92,29 @@ namespace TowerDefense.Managers
                 if (tmRenderer != null) tmRenderer.enabled = false;
             }
 
-            // 2. Khởi tạo / Cập nhật GameObject Map1_Background
-            GameObject bgObj = GameObject.Find("Map1_Background");
+            GameObject decorObj = GameObject.Find("Decorations");
+            if (decorObj != null)
+            {
+                decorObj.SetActive(false);
+            }
+
+            // 2. Khởi tạo / Cập nhật GameObject Background
+            GameObject bgObj = GameObject.Find(bgObjectName);
             if (bgObj == null)
             {
-                bgObj = new GameObject("Map1_Background");
+                bgObj = new GameObject(bgObjectName);
             }
 
             bgObj.transform.position = Vector3.zero;
-            // Tỷ lệ scale khớp chuẩn 100% với viewport camera orthographic size 5 (Rộng 20 x Cao 10 world units)
-            bgObj.transform.localScale = new Vector3(1.5625f, 1.3020833f, 1f);
+            // Tỷ lệ scale khớp chuẩn 100% với viewport camera orthographic size (Rộng 4*orthoSize x Cao 2*orthoSize world units)
+            float scaleRatio = orthoSize / 5.0f;
+            bgObj.transform.localScale = new Vector3(1.5625f * scaleRatio, 1.3020833f * scaleRatio, 1f);
 
             SpriteRenderer sr = bgObj.GetComponent<SpriteRenderer>();
             if (sr == null) sr = bgObj.AddComponent<SpriteRenderer>();
             sr.sortingOrder = -10;
 
-            Texture2D tex = Resources.Load<Texture2D>("Map1_Battlefield_BG");
+            Texture2D tex = Resources.Load<Texture2D>(bgResourceName);
             if (tex != null)
             {
                 tex.filterMode = FilterMode.Bilinear;
@@ -99,7 +124,7 @@ namespace TowerDefense.Managers
                     new Vector2(0.5f, 0.5f),
                     100f
                 );
-                bgSprite.name = "Map1_Battlefield_BG";
+                bgSprite.name = bgResourceName;
                 sr.sprite = bgSprite;
             }
         }
