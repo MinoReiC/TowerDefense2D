@@ -6,9 +6,10 @@ using TowerDefense.Towers;
 namespace TowerDefense.UI
 {
     /// <summary>
-    /// Giao diện trong trận (HUD, Thanh Tạm Dừng, Nút Sẵn Sàng, Menu Tạm Dừng Tích Hợp,
-    /// Bảng Chiến Thắng và Bảng Thất Bại) thiết kế đồng bộ theo phong cách Kingdom Rush
-    /// (Khung gỗ tối viền vàng kim bo góc, huy hiệu thông số, nút bóng 3D, kiểu chữ chuẩn tiếng Việt).
+    /// Giao diện trong trận (HUD tài nguyên & thanh máu căn cứ, Nút Tạm Dừng mở rộng,
+    /// Nút Sẵn Sàng, Menu Tạm Dừng Tích Hợp, Bảng Chiến Thắng và Bảng Thất Bại)
+    /// thiết kế đồng bộ theo phong cách Kingdom Rush (Khung gỗ tối viền vàng kim bo góc,
+    /// huy hiệu thông số to rõ ràng kèm thanh máu visual, font chuẩn tiếng Việt không lỗi ký tự).
     /// </summary>
     public class SimpleHUD : MonoBehaviour
     {
@@ -19,9 +20,13 @@ namespace TowerDefense.UI
         private GUIStyle _ribbonStyle;
         private GUIStyle _ribbonGreenStyle;
 
-        private GUIStyle _headerGoldStyle;
-        private GUIStyle _headerHpStyle;
-        private GUIStyle _headerTowerStyle;
+        private GUIStyle _chipTitleGoldStyle;
+        private GUIStyle _chipValGoldStyle;
+        private GUIStyle _chipTitleHpStyle;
+        private GUIStyle _chipValHpStyle;
+        private GUIStyle _chipTitleTowerStyle;
+        private GUIStyle _chipValTowerStyle;
+
         private GUIStyle _waveTextStyle;
         private GUIStyle _subTextStyle;
 
@@ -29,7 +34,6 @@ namespace TowerDefense.UI
         private GUIStyle _btnSecondary;
         private GUIStyle _btnPause;
         private GUIStyle _btnDanger;
-        private GUIStyle _btnHome;
 
         private GUIStyle _popupTitleStyle;
         private GUIStyle _defeatTitleStyle;
@@ -38,6 +42,7 @@ namespace TowerDefense.UI
         private GUIStyle _promptLabelStyle;
 
         private Texture2D _overlayTex;
+        private Texture2D _whiteTex;
         private bool _stylesInitialized = false;
 
         // ── Cache Fonts ───────────────────────────────────────────────────────
@@ -102,12 +107,13 @@ namespace TowerDefense.UI
             }
 
             // ════════════════════════════════════════════════════════════════
-            // 1. Ô HIỂN THỊ TIỀN, MÁU, WAVE QUÁI (GÓC TRÊN BÊN TRÁI)
+            // 1. Ô HIỂN THỊ TIỀN, MÁU (KÈM THANH MÁU), THÁP & WAVE QUÁI
             // ════════════════════════════════════════════════════════════════
-            DrawResourceAndWaveHUD(gold, hp, builtCount, maxSpots, currentWave, totalWaves, isEndless, aliveCount, isReady, mapLabel);
+            DrawResourceAndWaveHUD(gold, hp, builtCount, maxSpots, currentWave, totalWaves, isEndless, aliveCount, isReady, mapLabel, activeScene);
 
             // ════════════════════════════════════════════════════════════════
-            // 2. Ô CHỌN TẠM DỪNG & VỀ MENU (GÓC TRÊN BÊN PHẢI)
+            // 2. NÚT TẠM DỪNG MỞ RỘNG (GÓC TRÊN BÊN PHẢI)
+            // (Đã loại bỏ nút MENU thừa vì Popup Tạm Dừng đã có đủ nút điều hướng)
             // ════════════════════════════════════════════════════════════════
             if (!hasWon && !isGameOver)
             {
@@ -146,13 +152,13 @@ namespace TowerDefense.UI
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // 1. HUD GÓC TRÊN TRÁI: TIỀN, MÁU, THÁP, ĐỢT QUÁI
+        // 1. HUD GÓC TRÊN TRÁI: TIỀN, THANH MÁU, THÁP, ĐỢT QUÁI
         // ────────────────────────────────────────────────────────────────────
         private void DrawResourceAndWaveHUD(int gold, int hp, int builtCount, int maxSpots,
-            int currentWave, int totalWaves, bool isEndless, int aliveCount, bool isReady, string mapLabel)
+            int currentWave, int totalWaves, bool isEndless, int aliveCount, bool isReady, string mapLabel, string activeScene)
         {
             float hudW = 440f;
-            float hudH = 148f;
+            float hudH = 162f;
             Rect hudRect = new Rect(16f, 16f, hudW, hudH);
 
             GUI.Box(hudRect, "", _hudBoxStyle);
@@ -161,30 +167,53 @@ namespace TowerDefense.UI
             float padW = hudRect.width - 24f;
             float curY = hudRect.y + 10f;
 
-            // Hàng 1: 3 Huy hiệu (Chips) thông số: Vàng | Máu | Tháp
+            // Hàng 1: 3 Huy hiệu (Chips) thông số mở rộng: Vàng | Thanh Máu | Tháp
             float chipGap = 8f;
             float chipW   = (padW - chipGap * 2f) / 3f;
-            float chipH   = 32f;
+            float chipH   = 46f;
 
-            // Chip Vàng
+            // 1. Chip Tiền Vàng
             Rect chipGoldRect = new Rect(padX, curY, chipW, chipH);
             GUI.Box(chipGoldRect, "", _chipStyle);
-            GUI.Label(chipGoldRect, $"🪙 <b>{gold}</b> VÀNG", _headerGoldStyle);
+            GUI.Label(new Rect(chipGoldRect.x, chipGoldRect.y + 3f, chipGoldRect.width, 16f), "TIỀN VÀNG", _chipTitleGoldStyle);
+            GUI.Label(new Rect(chipGoldRect.x, chipGoldRect.y + 18f, chipGoldRect.width, 24f), $"<b>{gold}</b>", _chipValGoldStyle);
 
-            // Chip Máu
+            // 2. Chip Máu Căn Cứ & Thanh Máu (HP Bar)
+            int maxHp = (activeScene.Contains("Level3") || activeScene.Contains("Map3")) ? 30
+                : ((activeScene.Contains("Level2") || activeScene.Contains("Map2")) ? 25 : 20);
+            float hpPercent = Mathf.Clamp01((float)hp / maxHp);
+
             Rect chipHpRect = new Rect(padX + chipW + chipGap, curY, chipW, chipH);
             GUI.Box(chipHpRect, "", _chipStyle);
-            GUI.Label(chipHpRect, $"❤️ <b>{hp}</b> MÁU", _headerHpStyle);
+            GUI.Label(new Rect(chipHpRect.x, chipHpRect.y + 2f, chipHpRect.width, 15f), "♥ CĂN CỨ", _chipTitleHpStyle);
+            GUI.Label(new Rect(chipHpRect.x, chipHpRect.y + 16f, chipHpRect.width, 18f), $"<b>{hp} / {maxHp}</b>", _chipValHpStyle);
 
-            // Chip Tháp
+            // Thanh tiến trình Máu Visual
+            if (_whiteTex != null)
+            {
+                Rect hpBarBg = new Rect(chipHpRect.x + 10f, chipHpRect.y + chipH - 8f, chipHpRect.width - 20f, 5f);
+                GUI.color = new Color(0.10f, 0.07f, 0.05f, 0.95f);
+                GUI.DrawTexture(hpBarBg, _whiteTex);
+
+                Color hpBarColor = hpPercent > 0.5f
+                    ? new Color(0.24f, 0.88f, 0.32f, 1f)
+                    : (hpPercent > 0.25f ? new Color(1f, 0.82f, 0.18f, 1f) : new Color(0.95f, 0.22f, 0.22f, 1f));
+                Rect hpBarFill = new Rect(hpBarBg.x, hpBarBg.y, hpBarBg.width * hpPercent, hpBarBg.height);
+                GUI.color = hpBarColor;
+                GUI.DrawTexture(hpBarFill, _whiteTex);
+                GUI.color = Color.white;
+            }
+
+            // 3. Chip Tháp Pháo
             Rect chipTowerRect = new Rect(padX + (chipW + chipGap) * 2f, curY, chipW, chipH);
             GUI.Box(chipTowerRect, "", _chipStyle);
-            GUI.Label(chipTowerRect, $"🗼 <b>{builtCount}/{maxSpots}</b> THÁP", _headerTowerStyle);
+            GUI.Label(new Rect(chipTowerRect.x, chipTowerRect.y + 3f, chipTowerRect.width, 16f), "THÁP PHÁO", _chipTitleTowerStyle);
+            GUI.Label(new Rect(chipTowerRect.x, chipTowerRect.y + 18f, chipTowerRect.width, 24f), $"<b>{builtCount}/{maxSpots}</b>", _chipValTowerStyle);
 
             curY += chipH + 8f;
 
             // Hàng 2: Dải Ribbon đợt quái
-            Rect ribbonRect = new Rect(padX, curY, padW, 30f);
+            Rect ribbonRect = new Rect(padX, curY, padW, 28f);
             if (!isReady)
             {
                 GUI.Box(ribbonRect, "", _ribbonGreenStyle);
@@ -203,36 +232,27 @@ namespace TowerDefense.UI
                 GUI.Label(ribbonRect, waveText, _waveTextStyle);
             }
 
-            curY += 34f;
+            curY += 32f;
 
-            // Hàng 3: Dòng gợi ý click tháp gọn gàng, sắc nét
-            GUI.Label(new Rect(padX + 2f, curY, padW, 20f),
-                "• <b>Click ô bệ</b>: Pháo Đơn (70) / Tên Lửa (100) / Laser Tím (150)", _subTextStyle);
-            curY += 19f;
-            GUI.Label(new Rect(padX + 2f, curY, padW, 20f),
-                "• <b>Click tháp đã xây</b>: Nâng Cấp Lên Cấp 2 & Cấp 3 (Tăng ST)", _subTextStyle);
+            // Hàng 3: Dòng gợi ý thao tác tháp
+            GUI.Label(new Rect(padX + 2f, curY, padW, 18f),
+                "• <b>Bấm ô bệ</b>: Pháo Đơn (70) / Tên Lửa (100) / Laser Tím (150)", _subTextStyle);
+            curY += 18f;
+            GUI.Label(new Rect(padX + 2f, curY, padW, 18f),
+                "• <b>Bấm tháp đã xây</b>: Nâng Cấp Lên Cấp 2 & Cấp 3 (Tăng ST)", _subTextStyle);
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // 2. NÚT TẠM DỪNG & VỀ MENU GÓC TRÊN PHẢI
+        // 2. NÚT TẠM DỪNG TO RÕ RÀNG GÓC TRÊN PHẢI
         // ────────────────────────────────────────────────────────────────────
         private void DrawTopRightControls(bool isPaused)
         {
-            float btnH     = 42f;
-            float homeBtnW = 120f;
-            float homeX    = Screen.width - homeBtnW - 16f;
-            Rect homeBtnRect = new Rect(homeX, 16f, homeBtnW, btnH);
+            float pauseBtnW = 175f;
+            float pauseBtnH = 48f;
+            float pauseX    = Screen.width - pauseBtnW - 18f;
+            Rect pauseBtnRect = new Rect(pauseX, 16f, pauseBtnW, pauseBtnH);
 
-            if (GUI.Button(homeBtnRect, "🏠 MENU", _btnHome))
-            {
-                Time.timeScale = 1f;
-                MainMenuUI.OpenLevelSelectOnStart = true;
-                SceneManager.LoadScene("MainMenu");
-            }
-
-            float pauseBtnW = 135f;
-            Rect pauseBtnRect = new Rect(homeX - pauseBtnW - 10f, 16f, pauseBtnW, btnH);
-            string pauseLabel = isPaused ? "▶ TIẾP TỤC" : "⏸ TẠM DỪNG";
+            string pauseLabel = isPaused ? "▶   TIẾP TỤC" : "||   TẠM DỪNG";
             GUIStyle pStyle   = isPaused ? _btnPrimary : _btnPause;
 
             if (GUI.Button(pauseBtnRect, pauseLabel, pStyle))
@@ -322,7 +342,7 @@ namespace TowerDefense.UI
             curY += 64f;
 
             // Nút 2: CHƠI LẠI MÀN NÀY (Xanh lam)
-            if (GUI.Button(new Rect(padX, curY, padW, 46f), "🔄   CHƠI LẠI MÀN NÀY", _btnSecondary))
+            if (GUI.Button(new Rect(padX, curY, padW, 46f), "[↺]   CHƠI LẠI MÀN NÀY", _btnSecondary))
             {
                 Time.timeScale = 1f;
                 SceneManager.LoadScene(activeScene);
@@ -330,7 +350,7 @@ namespace TowerDefense.UI
             curY += 54f;
 
             // Nút 3: CHỌN MÀN CHƠI KHÁC (Gỗ viền vàng kim)
-            if (GUI.Button(new Rect(padX, curY, padW, 46f), "🗺️   CHỌN MÀN CHƠI KHÁC", _btnPause))
+            if (GUI.Button(new Rect(padX, curY, padW, 46f), "CHỌN MÀN CHƠI KHÁC", _btnPause))
             {
                 Time.timeScale = 1f;
                 MainMenuUI.OpenLevelSelectOnStart = true;
@@ -339,7 +359,7 @@ namespace TowerDefense.UI
             curY += 54f;
 
             // Nút 4: VỀ TRANG CHỦ MENU (Đỏ gỗ)
-            if (GUI.Button(new Rect(padX, curY, padW, 42f), "🏠   VỀ TRANG CHỦ MENU", _btnDanger))
+            if (GUI.Button(new Rect(padX, curY, padW, 42f), "VỀ TRANG CHỦ MENU", _btnDanger))
             {
                 Time.timeScale = 1f;
                 MainMenuUI.OpenLevelSelectOnStart = false;
@@ -409,7 +429,7 @@ namespace TowerDefense.UI
             }
             curY += 54f;
 
-            if (GUI.Button(new Rect(padX, curY, padW, 42f), $"🔄   CHƠI LẠI {mapLabel}", _btnPause))
+            if (GUI.Button(new Rect(padX, curY, padW, 42f), $"[↺]   CHƠI LẠI {mapLabel}", _btnPause))
             {
                 SceneManager.LoadScene(activeScene);
             }
@@ -435,20 +455,20 @@ namespace TowerDefense.UI
             float padW = rect.width - 72f;
             float curY = rect.y + 24f;
 
-            ShadowLabel(new Rect(padX, curY, padW, 46f), "💀   CĂN CỨ ĐÃ BỊ PHÁ HỦY!   💀", _defeatTitleStyle);
+            ShadowLabel(new Rect(padX, curY, padW, 46f), "[!]   CĂN CỨ ĐÃ BỊ PHÁ HỦY!   [!]", _defeatTitleStyle);
             curY += 50f;
 
             string defeatMsg = $"Kẻ địch đã xuyên thủng phòng tuyến tại <b>{mapLabel}</b> ở Đợt {currentWave}/{totalWaves}.\nHãy bổ sung thêm tháp pháo và nâng cấp Cấp 2 kịp thời để đẩy lui quái vật!";
             GUI.Label(new Rect(padX, curY, padW, 56f), defeatMsg, _popupDescStyle);
             curY += 64f;
 
-            if (GUI.Button(new Rect(padX, curY, padW, 54f), "🔄   THỬ LẠI NGAY", _btnPrimary))
+            if (GUI.Button(new Rect(padX, curY, padW, 54f), "[↺]   THỬ LẠI NGAY", _btnPrimary))
             {
                 SceneManager.LoadScene(activeScene);
             }
             curY += 64f;
 
-            if (GUI.Button(new Rect(padX, curY, padW, 46f), "🗺️   QUAY VỀ CHỌN MÀN CHƠI", _btnSecondary))
+            if (GUI.Button(new Rect(padX, curY, padW, 46f), "QUAY VỀ CHỌN MÀN CHƠI", _btnSecondary))
             {
                 MainMenuUI.OpenLevelSelectOnStart = true;
                 SceneManager.LoadScene("MainMenu");
@@ -462,6 +482,9 @@ namespace TowerDefense.UI
         {
             if (_overlayTex == null)
                 _overlayTex = MakeTex(2, 2, new Color(0.02f, 0.03f, 0.05f, 0.55f));
+
+            if (_whiteTex == null)
+                _whiteTex = MakeTex(1, 1, Color.white);
 
             if (_fontTitle  == null) _fontTitle  = GetVietnameseFont(28);
             if (_fontHeader == null) _fontHeader = GetVietnameseFont(18);
@@ -503,10 +526,15 @@ namespace TowerDefense.UI
                 goldBorder, 1
             );
 
-            // 2. Kiểu chữ
-            _headerGoldStyle = LabelStyle(_fontHeader, 15, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.90f, 0.32f));
-            _headerHpStyle   = LabelStyle(_fontHeader, 15, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.42f, 0.42f));
-            _headerTowerStyle= LabelStyle(_fontHeader, 15, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.48f, 0.90f, 1f));
+            // 2. Kiểu chữ huy hiệu thông số HUD mở rộng
+            _chipTitleGoldStyle  = LabelStyle(_fontSmall, 11, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.95f, 0.78f, 0.30f));
+            _chipValGoldStyle    = LabelStyle(_fontHeader, 18, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.92f, 0.35f));
+
+            _chipTitleHpStyle    = LabelStyle(_fontSmall, 11, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.65f, 0.65f));
+            _chipValHpStyle      = LabelStyle(_fontText, 14, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+
+            _chipTitleTowerStyle = LabelStyle(_fontSmall, 11, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.55f, 0.85f, 1f));
+            _chipValTowerStyle   = LabelStyle(_fontHeader, 17, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.65f, 0.95f, 1f));
 
             _waveTextStyle   = LabelStyle(_fontText, 13, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.96f, 0.82f));
             _subTextStyle    = LabelStyle(_fontSmall, 12, FontStyle.Normal, TextAnchor.UpperLeft, new Color(0.92f, 0.88f, 0.80f));
@@ -543,19 +571,11 @@ namespace TowerDefense.UI
             );
 
             _btnPause = ButtonStyle(
-                15,
+                16,
                 new Color(0.48f, 0.32f, 0.16f),
                 new Color(0.26f, 0.16f, 0.08f),
                 goldBorder,
                 new Color(1f, 0.92f, 0.70f)
-            );
-
-            _btnHome = ButtonStyle(
-                15,
-                new Color(0.24f, 0.40f, 0.68f),
-                new Color(0.12f, 0.20f, 0.42f),
-                goldBorder,
-                Color.white
             );
 
             _btnDanger = ButtonStyle(

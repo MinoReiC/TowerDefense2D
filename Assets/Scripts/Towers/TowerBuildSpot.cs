@@ -274,13 +274,13 @@ namespace TowerDefense.Towers
             float innerY = popupRect.y + 12f;
             float btnW   = BUILD_POPUP_W - 28f;
 
-            GUI.Label(new Rect(innerX, innerY, btnW, 28f), "🏗  CHỌN LOẠI PHÁO ĐỂ XÂY:", _titleStyle);
+            GUI.Label(new Rect(innerX, innerY, btnW, 28f), "CHỌN LOẠI PHÁO ĐỂ XÂY:", _titleStyle);
             innerY += 32f;
 
             // 1. Nút Pháo Đơn Cyber (70 Vàng)
             bool canAffordCannon = GameManager.Instance != null && GameManager.Instance.CanAfford(cannonCost);
-            string cannonLabel = $"🗼  Pháo Đơn Cyber (ST: 16-24, Crit)  —  {cannonCost} 🪙";
-            if (!canAffordCannon) cannonLabel += "  ❌";
+            string cannonLabel = $"[1] Pháo Đơn Cyber (ST: 16-24, Crit)  —  {cannonCost} Vàng";
+            if (!canAffordCannon) cannonLabel += "  (Thiếu vàng)";
 
             GUI.enabled = cannonTowerPrefab != null && canAffordCannon;
             if (GUI.Button(new Rect(innerX, innerY, btnW, 44f), cannonLabel, _btnGreen))
@@ -292,8 +292,8 @@ namespace TowerDefense.Towers
 
             // 2. Nút Pháo Tên Lửa (100 Vàng)
             bool canAffordRocket = GameManager.Instance != null && GameManager.Instance.CanAfford(rocketCost);
-            string rocketLabel = $"🚀  Pháo Tên Lửa (ST: 38-56, Nổ AoE)  —  {rocketCost} 🪙";
-            if (!canAffordRocket) rocketLabel += "  ❌";
+            string rocketLabel = $"[2] Pháo Tên Lửa (ST: 38-56, AoE)  —  {rocketCost} Vàng";
+            if (!canAffordRocket) rocketLabel += "  (Thiếu vàng)";
 
             GUI.enabled = rocketTowerPrefab != null && canAffordRocket;
             if (GUI.Button(new Rect(innerX, innerY, btnW, 44f), rocketLabel, _btnBlue))
@@ -305,8 +305,8 @@ namespace TowerDefense.Towers
 
             // 3. Nút Tháp Laser/Plasma Tím Mới (150 Vàng - Sát thương siêu to & Xuyên giáp cao!)
             bool canAffordLaser = GameManager.Instance != null && GameManager.Instance.CanAfford(laserCost);
-            string laserLabel = $"🔮  Tháp Laser Tím (ST: 85-125, Siêu Dame)  —  {laserCost} 🪙";
-            if (!canAffordLaser) laserLabel += "  ❌";
+            string laserLabel = $"[3] Tháp Laser Tím (ST: 85-125, Siêu Dame)  —  {laserCost} Vàng";
+            if (!canAffordLaser) laserLabel += "  (Thiếu vàng)";
 
             GameObject laserPrefabToUse = laserTowerPrefab != null ? laserTowerPrefab : cannonTowerPrefab;
             GUI.enabled = laserPrefabToUse != null && canAffordLaser;
@@ -318,7 +318,7 @@ namespace TowerDefense.Towers
             innerY += 50f;
 
             // Nút Huỷ
-            if (GUI.Button(new Rect(innerX + btnW / 2f - 44f, innerY, 88f, 26f), "✕  Đóng", _btnCancel))
+            if (GUI.Button(new Rect(innerX + btnW / 2f - 44f, innerY, 88f, 26f), "Đóng", _btnCancel))
             {
                 CloseAllMenus();
             }
@@ -334,8 +334,8 @@ namespace TowerDefense.Towers
             float btnW   = UPGRADE_POPUP_W - 32f;
 
             string levelBadge = currentTower.Level >= currentTower.MaxLevel
-                ? "⭐⭐⭐ (CẤP 3 MAX)"
-                : (currentTower.Level == 2 ? "⭐⭐ (Cấp 2/3)" : "⭐ (Cấp 1/3)");
+                ? "★★★ (CẤP 3 TỐI ĐA)"
+                : (currentTower.Level == 2 ? "★★ (Cấp 2/3)" : "★ (Cấp 1/3)");
             GUI.Label(new Rect(innerX, innerY, btnW, 28f), $"{currentTower.TowerTypeName}  {levelBadge}", _titleStyle);
             innerY += 30f;
 
@@ -351,7 +351,7 @@ namespace TowerDefense.Towers
                 int nextLv = currentTower.Level + 1;
                 bool canAfford = GameManager.Instance != null && GameManager.Instance.CanAfford(upCost);
 
-                string upLabel = $"⭐  NÂNG CẤP LÊN CẤP {nextLv}  —  {upCost} 🪙";
+                string upLabel = $"★  NÂNG CẤP LÊN CẤP {nextLv}  —  {upCost} Vàng";
                 if (!canAfford) upLabel += "  (Thiếu vàng)";
 
                 GUI.enabled = canAfford;
@@ -363,17 +363,17 @@ namespace TowerDefense.Towers
                 innerY += 54f;
 
                 // Chi tiết thông số tăng thêm khi nâng cấp lên Cấp 2 hoặc Cấp 3
-                GUI.Label(new Rect(innerX, innerY, btnW, 24f), $"<color=#A0FFA0>⚡ Cấp {nextLv}: {currentTower.NextUpgradeBonusSummary}</color>", _subTitleStyle);
+                GUI.Label(new Rect(innerX, innerY, btnW, 24f), $"<color=#A0FFA0>+ Cấp {nextLv}: {currentTower.NextUpgradeBonusSummary}</color>", _subTitleStyle);
                 innerY += 30f;
             }
             else
             {
-                GUI.Label(new Rect(innerX, innerY, btnW, 36f), "✨ THÁP ĐÃ ĐẠT CẤP 3 TỐI ĐA (LEVEL 3 MAX)", _titleStyle);
+                GUI.Label(new Rect(innerX, innerY, btnW, 36f), "★ THÁP ĐÃ ĐẠT CẤP 3 TỐI ĐA (LEVEL 3 MAX)", _titleStyle);
                 innerY += 46f;
             }
 
             // Nút Đóng
-            if (GUI.Button(new Rect(innerX + btnW / 2f - 44f, innerY, 88f, 26f), "✕  Đóng", _btnCancel))
+            if (GUI.Button(new Rect(innerX + btnW / 2f - 44f, innerY, 88f, 26f), "Đóng", _btnCancel))
             {
                 CloseAllMenus();
             }
@@ -385,7 +385,7 @@ namespace TowerDefense.Towers
             if (HasTower || prefab == null) return;
             if (GameManager.Instance == null || !GameManager.Instance.CanAfford(cost))
             {
-                Debug.Log($"<color=red>[Xây Tháp] ❌ Không đủ vàng! Cần {cost} vàng.</color>");
+                Debug.Log($"<color=red>[Xây Tháp] (!) Không đủ vàng! Cần {cost} vàng.</color>");
                 CloseAllMenus();
                 return;
             }
@@ -414,7 +414,7 @@ namespace TowerDefense.Towers
             if (indicatorRenderer != null) indicatorRenderer.enabled = false;
 
             string name = currentTower != null ? currentTower.TowerTypeName : "Tháp";
-            Debug.Log($"<color=green>[Xây Tháp] ✅ {name} xây thành công tại {transform.position}! Vàng còn: {GameManager.Instance.Gold}</color>");
+            Debug.Log($"<color=green>[Xây Tháp] [OK] {name} xây thành công tại {transform.position}! Vàng còn: {GameManager.Instance.Gold}</color>");
         }
 
         private void PerformUpgrade(int cost)
@@ -422,7 +422,7 @@ namespace TowerDefense.Towers
             if (currentTower == null || !currentTower.CanUpgrade) return;
             if (GameManager.Instance == null || !GameManager.Instance.CanAfford(cost))
             {
-                Debug.Log($"<color=red>[Nâng Cấp] ❌ Không đủ vàng! Cần {cost} vàng.</color>");
+                Debug.Log($"<color=red>[Nâng Cấp] (!) Không đủ vàng! Cần {cost} vàng.</color>");
                 return;
             }
 
@@ -506,10 +506,18 @@ namespace TowerDefense.Towers
             indicatorRenderer = iRenderer;
         }
 
+        private static Font _fontUi;
+        private static Font _fontTitleUi;
+
         private static void InitStyles()
         {
             if (_stylesInit && _boxStyle != null && _boxStyle.normal.background != null && _btnPurple != null) return;
             _stylesInit = true;
+
+            if (_fontUi == null)
+                _fontUi = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Tahoma" }, 14);
+            if (_fontTitleUi == null)
+                _fontTitleUi = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Tahoma" }, 16);
 
             Color gold = new Color(0.95f, 0.74f, 0.27f);
 
@@ -518,13 +526,16 @@ namespace TowerDefense.Towers
             _boxStyle.border = new RectOffset(16, 16, 16, 16);
 
             _titleStyle = new GUIStyle(GUI.skin.label);
+            _titleStyle.font = _fontTitleUi;
             _titleStyle.fontStyle = FontStyle.Bold;
             _titleStyle.fontSize  = 16;
             _titleStyle.normal.textColor = new Color(1f, 0.90f, 0.40f, 1f);
 
             _subTitleStyle = new GUIStyle(GUI.skin.label);
+            _subTitleStyle.font = _fontUi;
             _subTitleStyle.fontSize = 12;
             _subTitleStyle.normal.textColor = new Color(0.95f, 0.92f, 0.85f, 0.95f);
+            _subTitleStyle.richText = true;
 
             // Nút Pháo Đơn Cyber (xanh lá bo góc viền vàng)
             _btnGreen = CreateButtonStyle(14, new Color(0.38f, 0.82f, 0.26f), new Color(0.14f, 0.50f, 0.12f), gold, Color.white);
@@ -546,6 +557,7 @@ namespace TowerDefense.Towers
         {
             GUIStyle st = new GUIStyle(GUI.skin.button)
             {
+                font = _fontUi,
                 fontStyle = FontStyle.Bold,
                 fontSize = fontSize,
                 alignment = TextAnchor.MiddleCenter
