@@ -3,6 +3,11 @@ using UnityEngine.SceneManagement;
 
 namespace TowerDefense.UI
 {
+    /// <summary>
+    /// Menu chính + màn chọn chiến trường phong cách Kingdom Rush:
+    /// khung gỗ viền vàng bo góc (tạo bằng code), thẻ màn chơi có ảnh xem trước bản đồ,
+    /// tự co giãn theo mọi độ phân giải (độ phân giải ảo 1280x720).
+    /// </summary>
     public class MainMenuUI : MonoBehaviour
     {
         public static bool OpenLevelSelectOnStart = false;
@@ -14,126 +19,115 @@ namespace TowerDefense.UI
             HowToPlay
         }
 
+        private const float VW = 1280f;
+        private const float VH = 720f;
+
         [Header("Background")]
         [SerializeField] private Texture2D backgroundTexture;
 
         private MenuState currentState = MenuState.Home;
 
         // Styles (Non-static để không bị mất màu khi đổi Scene)
-        private GUIStyle _panelBoxStyle;
+        private GUIStyle _panelStyle;
+        private GUIStyle _cardStyle;
+        private GUIStyle _cardHoverStyle;
+        private GUIStyle _thumbFrameStyle;
+        private GUIStyle _chipStyle;
+        private GUIStyle _ribbonStyle;
         private GUIStyle _titleStyle;
+        private GUIStyle _bigTitleStyle;
         private GUIStyle _subTitleStyle;
         private GUIStyle _btnPrimary;
         private GUIStyle _btnSecondary;
         private GUIStyle _btnLocked;
         private GUIStyle _btnDanger;
-        private GUIStyle _cardBoxStyle;
         private GUIStyle _cardTitleStyle;
         private GUIStyle _cardDescStyle;
+        private GUIStyle _chipTextStyle;
+        private GUIStyle _starStyle;
         private GUIStyle _infoTextStyle;
 
         private Texture2D _overlayTex;
+        private Texture2D _thumb1, _thumb2, _thumb3;
 
-        // Cache Font để không khởi tạo lại nhiều lần gây tụt FPS
-        private Font _fontTitle;
-        private Font _fontBtn;
-        private Font _fontText;
-        private Font _fontSmall;
+        private Font _fontTitle, _fontBtn, _fontText, _fontSmall;
 
         private void Awake()
         {
             Time.timeScale = 1f;
 
-            // Nếu vừa hoàn thành trận đấu và chọn "Quay về chọn màn chơi", mở thẳng LevelSelect
             if (OpenLevelSelectOnStart)
             {
                 currentState = MenuState.LevelSelect;
                 OpenLevelSelectOnStart = false;
             }
 
-            // Tự động load ảnh nền từ Resources nếu chưa được gán
             if (backgroundTexture == null)
-            {
                 backgroundTexture = Resources.Load<Texture2D>("MainMenu_BG");
-            }
+
+            // Ảnh xem trước các bản đồ (dùng chính background của từng màn)
+            _thumb1 = Resources.Load<Texture2D>("Map1_Battlefield_BG");
+            _thumb2 = Resources.Load<Texture2D>("Map2_Battlefield_BG");
+            _thumb3 = Resources.Load<Texture2D>("Map3_Battlefield_BG");
         }
 
         private void OnGUI()
         {
-            // Tự động khởi tạo lại styles nếu texture bị giải phóng khi load lại scene
-            if (_panelBoxStyle == null || _btnPrimary == null || _btnPrimary.normal.background == null)
-            {
+            if (_panelStyle == null || _btnPrimary == null || _btnPrimary.normal.background == null)
                 InitStyles();
-            }
 
-            // 1. Vẽ hình nền chiến trường toàn màn hình
+            // 1. Nền + lớp phủ tối (theo toàn màn hình thật)
             if (backgroundTexture != null)
-            {
                 GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), backgroundTexture, ScaleMode.ScaleAndCrop);
-            }
-
-            // 2. Lớp phủ tối 45% mờ
             if (_overlayTex != null)
-            {
                 GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _overlayTex);
-            }
 
-            // 3. Vẽ màn hình theo trạng thái
+            // 2. Giao diện vẽ trên khung ảo 1280x720, tự co giãn & căn giữa
+            float s = Mathf.Min(Screen.width / VW, Screen.height / VH);
+            Vector3 offset = new Vector3((Screen.width - VW * s) * 0.5f, (Screen.height - VH * s) * 0.5f, 0f);
+            Matrix4x4 oldMatrix = GUI.matrix;
+            GUI.matrix = Matrix4x4.TRS(offset, Quaternion.identity, new Vector3(s, s, 1f));
+
             switch (currentState)
             {
-                case MenuState.Home:
-                    DrawHomeScreen();
-                    break;
-                case MenuState.LevelSelect:
-                    DrawLevelSelectScreen();
-                    break;
-                case MenuState.HowToPlay:
-                    DrawHowToPlayScreen();
-                    break;
+                case MenuState.Home: DrawHomeScreen(); break;
+                case MenuState.LevelSelect: DrawLevelSelectScreen(); break;
+                case MenuState.HowToPlay: DrawHowToPlayScreen(); break;
             }
+
+            GUI.matrix = oldMatrix;
         }
 
         // ════════════════════════════════════════════════════════════════════
-        // 1. MÀN HÌNH TRANG CHỦ
+        // 1. TRANG CHỦ
         // ════════════════════════════════════════════════════════════════════
         private void DrawHomeScreen()
         {
-            float centerX = Screen.width / 2f;
-            float panelW = Mathf.Min(640f, Screen.width - 40f);
-            float panelH = 530f;
-            float startY = Mathf.Max(25f, (Screen.height - panelH) / 2f);
+            Rect panel = new Rect(VW / 2f - 290f, 70f, 580f, 580f);
+            GUI.Box(panel, "", _panelStyle);
 
-            Rect panelRect = new Rect(centerX - panelW / 2f, startY, panelW, panelH);
-            GUI.Box(panelRect, "", _panelBoxStyle);
+            float x = panel.x + 50f;
+            float w = panel.width - 100f;
+            float y = panel.y + 34f;
 
-            float contentX = panelRect.x + 36f;
-            float contentW = panelW - 72f;
-            float currentY = panelRect.y + 35f;
+            ShadowLabel(new Rect(x, y, w, 64f), "TOWER DEFENSE", _bigTitleStyle);
+            y += 62f;
+            ShadowLabel(new Rect(x, y, w, 44f), "★   2D   ★", _titleStyle);
+            y += 52f;
 
-            // TIÊU ĐỀ CHÍNH
-            GUI.Label(new Rect(contentX, currentY, contentW, 55f), "★  TOWER DEFENSE 2D  ★", _titleStyle);
-            currentY += 58f;
+            GUI.Box(new Rect(x + 20f, y, w - 40f, 34f), "", _ribbonStyle);
+            GUI.Label(new Rect(x + 20f, y, w - 40f, 34f), "Chiến Thuật Phòng Thủ Tháp — Bảo Vệ Căn Cứ", _subTitleStyle);
+            y += 62f;
 
-            // PHỤ ĐỀ
-            GUI.Label(new Rect(contentX, currentY, contentW, 28f), "Chiến Thuật Phòng Thủ Tháp — Bảo Vệ Căn Cứ", _subTitleStyle);
-            currentY += 48f;
-
-            // NÚT 1: BẮT ĐẦU CHƠI
-            if (GUI.Button(new Rect(contentX, currentY, contentW, 68f), "▶   BẮT ĐẦU CHƠI", _btnPrimary))
-            {
+            if (GUI.Button(new Rect(x, y, w, 72f), "▶    BẮT ĐẦU CHƠI", _btnPrimary))
                 currentState = MenuState.LevelSelect;
-            }
-            currentY += 86f;
+            y += 90f;
 
-            // NÚT 2: HƯỚNG DẪN CÁCH CHƠI
-            if (GUI.Button(new Rect(contentX, currentY, contentW, 60f), "HƯỚNG DẪN CÁCH CHƠI", _btnSecondary))
-            {
+            if (GUI.Button(new Rect(x, y, w, 60f), "HƯỚNG DẪN CÁCH CHƠI", _btnSecondary))
                 currentState = MenuState.HowToPlay;
-            }
-            currentY += 76f;
+            y += 76f;
 
-            // NÚT 3: THOÁT GAME
-            if (GUI.Button(new Rect(contentX, currentY, contentW, 54f), "✕   THOÁT GAME", _btnDanger))
+            if (GUI.Button(new Rect(x, y, w, 54f), "✕    THOÁT GAME", _btnDanger))
             {
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
@@ -141,299 +135,248 @@ namespace TowerDefense.UI
                 Application.Quit();
 #endif
             }
-            currentY += 72f;
+            y += 72f;
 
-            // FOOTER
-            GUI.Label(new Rect(contentX, currentY, contentW, 24f), "Phiên bản v3.0 • Đã mở khóa trọn bộ 3 Màn Chơi!", _infoTextStyle);
+            GUI.Label(new Rect(x, y, w, 24f), "Phiên bản v3.0 • Đã mở khóa trọn bộ 3 Màn Chơi", _infoTextStyle);
         }
 
         // ════════════════════════════════════════════════════════════════════
-        // 2. MÀN HÌNH CHỌN CẤP ĐỘ (LEVEL SELECTION)
+        // 2. CHỌN MÀN CHƠI
         // ════════════════════════════════════════════════════════════════════
         private void DrawLevelSelectScreen()
         {
-            float centerX = Screen.width / 2f;
-            float totalW = Mathf.Min(1080f, Screen.width - 40f);
-            float totalH = 570f;
-            float startY = Mathf.Max(25f, (Screen.height - totalH) / 2f);
+            Rect panel = new Rect(60f, 30f, 1160f, 660f);
+            GUI.Box(panel, "", _panelStyle);
 
-            Rect mainRect = new Rect(centerX - totalW / 2f, startY, totalW, totalH);
-            GUI.Box(mainRect, "", _panelBoxStyle);
+            ShadowLabel(new Rect(panel.x, panel.y + 18f, panel.width, 54f), "★   CHỌN CHIẾN TRƯỜNG   ★", _titleStyle);
+            GUI.Label(new Rect(panel.x, panel.y + 70f, panel.width, 26f), "Chọn một màn chơi để xuất quân bảo vệ căn cứ", _subTitleStyle);
 
-            float currentY = mainRect.y + 28f;
+            float cardW = 350f, cardH = 440f, gap = 25f;
+            float x0 = panel.x + (panel.width - (cardW * 3f + gap * 2f)) * 0.5f;
+            float y0 = panel.y + 112f;
 
-            // Tiêu đề
-            GUI.Label(new Rect(mainRect.x, currentY, totalW, 52f), "★   CHỌN CHIẾN TRƯỜNG THỬ THÁCH   ★", _titleStyle);
-            currentY += 48f;
-            GUI.Label(new Rect(mainRect.x, currentY, totalW, 26f), "Hãy chọn một màn chơi bên dưới để xuất quân bảo vệ căn cứ", _subTitleStyle);
-            currentY += 42f;
+            DrawLevelCard(new Rect(x0, y0, cardW, cardH), _thumb1,
+                "MÀN 1: BÌNH NGUYÊN", new Color(0.62f, 0.95f, 0.45f), 1,
+                "5 ô pháo", "5 đợt", "150 vàng",
+                "Thảo nguyên xanh ven sông. Bản đồ tiêu chuẩn, có Xe Tăng Hạng Nặng và Siêu Boss ở đợt cuối.",
+                "▶  VÀO TRẬN", true,
+                () => { Debug.Log("[Menu] Đang tải Màn 1 (SampleScene)..."); SceneManager.LoadScene("SampleScene"); });
 
-            // 3 Card màn chơi
-            float cardSpacing = 20f;
-            float cardW = (totalW - 60f - (cardSpacing * 2f)) / 3f;
-            float cardH = 300f;
-            float cardStartX = mainRect.x + 30f;
+            DrawLevelCard(new Rect(x0 + cardW + gap, y0, cardW, cardH), _thumb2,
+                "MÀN 2: SA MẠC LỬA", new Color(1f, 0.72f, 0.30f), 2,
+                "8 ô pháo", "6 đợt", "200 vàng",
+                "Sa mạc nung đỏ bên chân núi lửa. Bản đồ rộng, đường Zíc-Zắc, xuất hiện 2 Siêu Boss.",
+                "▶  VÀO TRẬN", true,
+                () => { Debug.Log("[Menu] Đang tải Màn 2: Sa Mạc Lửa (Level2Scene)..."); SceneManager.LoadScene("Level2Scene"); });
 
-            // ── THẺ MÀN 1: BÌNH NGUYÊN (SẴN SÀNG) ──
-            Rect card1 = new Rect(cardStartX, currentY, cardW, cardH);
-            DrawLevelCard(
-                card1,
-                title: "MÀN 1: BÌNH NGUYÊN",
-                badge: "● SẴN SÀNG (OPEN)",
-                desc: "Thảo nguyên xanh ven sông\n• Bản đồ tiêu chuẩn (5 Ô đặt pháo)\n• 5 Đợt quái dồn dập\n• Xuất hiện Xe Tăng Hạng Nặng\n• Siêu Boss ở Round 5",
-                btnText: "▶  VÀO TRẬN (MÀN 1)",
-                isUnlocked: true,
-                onPlay: () =>
-                {
-                    Debug.Log("<color=green>[Menu] 🚀 Đang tải Màn 1 (SampleScene)...</color>");
-                    SceneManager.LoadScene("SampleScene");
-                }
-            );
+            DrawLevelCard(new Rect(x0 + (cardW + gap) * 2f, y0, cardW, cardH), _thumb3,
+                "MÀN 3: PHÁO ĐÀI BĂNG GIÁ", new Color(0.55f, 0.88f, 1f), 3,
+                "10 ô pháo", "7 đợt", "250 vàng",
+                "Thành lũy băng giá với đường xoắn ốc đại chiến. Tổng lực 7 đợt cùng 3 Siêu Boss.",
+                "▶  VÀO TRẬN", true,
+                () => { Debug.Log("[Menu] Đang tải Màn 3: Pháo Đài Băng Giá (Level3Scene)..."); SceneManager.LoadScene("Level3Scene"); });
 
-            // ── THẺ MÀN 2: SA MẠC LỬA (SẴN SÀNG) ──
-            Rect card2 = new Rect(cardStartX + cardW + cardSpacing, currentY, cardW, cardH);
-            DrawLevelCard(
-                card2,
-                title: "MÀN 2: SA MẠC LỬA",
-                badge: "● SẴN SÀNG (OPEN)",
-                desc: "Chiến trường sa mạc rộng lớn\n• Bản đồ TO HƠN & đường đi Zíc-Zắc\n• 8 Ô đặt pháo chiến thuật\n• Khởi đầu 160 Vàng & 25 Máu\n• 6 Đợt quái + 2 Siêu Boss!",
-                btnText: "▶  VÀO TRẬN (MÀN 2)",
-                isUnlocked: true,
-                onPlay: () =>
-                {
-                    Debug.Log("<color=yellow>[Menu] 🏜️ Đang tải Màn 2: Sa Mạc Lửa (Level2Scene)...</color>");
-                    SceneManager.LoadScene("Level2Scene");
-                }
-            );
-
-            // ── THẺ MÀN 3: PHÁO ĐÀI BĂNG GIÁ (ĐÃ MỞ KHÓA!) ──
-            Rect card3 = new Rect(cardStartX + (cardW + cardSpacing) * 2f, currentY, cardW, cardH);
-            DrawLevelCard(
-                card3,
-                title: "MÀN 3: PHÁO ĐÀI BĂNG GIÁ",
-                badge: "★ MỚI MỞ KHÓA (NEW!)",
-                desc: "Đại chiến thành lũy đá băng\n• Bản đồ ĐẠI CHIẾN 35×23 (Xoắn ốc)\n• 10 Ô đặt pháo công sự\n• Khởi đầu 220 Vàng & 30 Máu\n• 7 Đợt tổng lực + 3 Siêu Boss!",
-                btnText: "▶  VÀO TRẬN (MÀN 3)",
-                isUnlocked: true,
-                onPlay: () =>
-                {
-                    Debug.Log("<color=cyan>[Menu] ❄️ Đang tải Màn 3: Pháo Đài Băng Giá (Level3Scene)...</color>");
-                    SceneManager.LoadScene("Level3Scene");
-                }
-            );
-
-            // NÚT QUAY LẠI TRANG CHỦ
-            float btnBackW = 280f;
-            float btnBackH = 50f;
-            float btnBackY = currentY + cardH + 26f;
-            if (GUI.Button(new Rect(centerX - btnBackW / 2f, btnBackY, btnBackW, btnBackH), "↩   QUAY LẠI TRANG CHỦ", _btnSecondary))
-            {
+            if (GUI.Button(new Rect(VW / 2f - 150f, panel.y + panel.height - 70f, 300f, 48f), "↩   QUAY LẠI TRANG CHỦ", _btnSecondary))
                 currentState = MenuState.Home;
-            }
         }
 
-        private void DrawLevelCard(Rect rect, string title, string badge, string desc, string btnText, bool isUnlocked, System.Action onPlay)
+        private void DrawLevelCard(Rect r, Texture2D thumb, string title, Color titleColor, int stars,
+                                   string chipA, string chipB, string chipC, string desc,
+                                   string btnText, bool unlocked, System.Action onPlay)
         {
-            GUI.Box(rect, "", _cardBoxStyle);
+            bool hover = r.Contains(Event.current.mousePosition);
+            GUI.Box(r, "", hover ? _cardHoverStyle : _cardStyle);
 
-            float padX = rect.x + 18f;
-            float padW = rect.width - 36f;
-            float y = rect.y + 18f;
-
-            GUI.Label(new Rect(padX, y, padW, 28f), title, _cardTitleStyle);
-            y += 32f;
-
-            string badgeColor = isUnlocked ? "#55FF55" : "#FFAA33";
-            GUI.Label(new Rect(padX, y, padW, 24f), $"<color={badgeColor}><b>{badge}</b></color>", _infoTextStyle);
-            y += 32f;
-
-            GUI.Label(new Rect(padX, y, padW, 125f), desc, _cardDescStyle);
-
-            float btnH = 52f;
-            float btnY = rect.y + rect.height - btnH - 18f;
-
-            if (isUnlocked)
+            // Ảnh xem trước bản đồ
+            Rect frame = new Rect(r.x + 14f, r.y + 14f, r.width - 28f, 178f);
+            GUI.Box(frame, "", _thumbFrameStyle);
+            if (thumb != null)
             {
-                if (GUI.Button(new Rect(padX, btnY, padW, btnH), btnText, _btnPrimary))
-                {
-                    onPlay?.Invoke();
-                }
+                Rect img = new Rect(frame.x + 4f, frame.y + 4f, frame.width - 8f, frame.height - 8f);
+                GUI.DrawTexture(img, thumb, ScaleMode.ScaleAndCrop);
+            }
+
+            float x = r.x + 18f;
+            float w = r.width - 36f;
+            float y = frame.yMax + 12f;
+
+            _cardTitleStyle.normal.textColor = titleColor;
+            ShadowLabel(new Rect(x, y, w, 28f), title, _cardTitleStyle);
+            y += 30f;
+
+            string starText = "";
+            for (int i = 1; i <= 3; i++)
+                starText += i <= stars ? "★ " : "☆ ";
+            GUI.Label(new Rect(x, y, w, 24f), "Độ khó: " + starText, _starStyle);
+            y += 30f;
+
+            // 3 viên thông số
+            float chipW = (w - 16f) / 3f;
+            DrawChip(new Rect(x, y, chipW, 26f), chipA);
+            DrawChip(new Rect(x + chipW + 8f, y, chipW, 26f), chipB);
+            DrawChip(new Rect(x + (chipW + 8f) * 2f, y, chipW, 26f), chipC);
+            y += 34f;
+
+            GUI.Label(new Rect(x, y, w, 62f), desc, _cardDescStyle);
+
+            Rect btn = new Rect(x, r.yMax - 62f, w, 48f);
+            if (unlocked)
+            {
+                if (GUI.Button(btn, btnText, _btnPrimary)) onPlay?.Invoke();
             }
             else
             {
-                GUI.Button(new Rect(padX, btnY, padW, btnH), btnText, _btnLocked);
+                GUI.Button(btn, "CHƯA MỞ KHÓA", _btnLocked);
             }
         }
 
+        private void DrawChip(Rect r, string text)
+        {
+            GUI.Box(r, "", _chipStyle);
+            GUI.Label(r, text, _chipTextStyle);
+        }
+
         // ════════════════════════════════════════════════════════════════════
-        // 3. MÀN HÌNH HƯỚNG DẪN CÁCH CHƠI (ĐÃ SỬA FONT & CHỮ TRÀN HÀNG)
+        // 3. HƯỚNG DẪN
         // ════════════════════════════════════════════════════════════════════
         private void DrawHowToPlayScreen()
         {
-            float centerX = Screen.width / 2f;
-            float panelW = Mathf.Min(840f, Screen.width - 40f);
-            float panelH = 580f;
-            float startY = Mathf.Max(20f, (Screen.height - panelH) / 2f);
+            Rect panel = new Rect(VW / 2f - 440f, 40f, 880f, 640f);
+            GUI.Box(panel, "", _panelStyle);
 
-            Rect panelRect = new Rect(centerX - panelW / 2f, startY, panelW, panelH);
-            GUI.Box(panelRect, "", _panelBoxStyle);
+            float x = panel.x + 44f;
+            float w = panel.width - 88f;
+            float y = panel.y + 22f;
 
-            float padX = panelRect.x + 40f;
-            float padW = panelW - 80f;
-            float y = panelRect.y + 28f;
+            ShadowLabel(new Rect(x, y, w, 52f), "★   HƯỚNG DẪN CÁCH CHƠI   ★", _titleStyle);
+            y += 62f;
 
-            // TIÊU ĐỀ GỌN GÀNG, KHÔNG BỊ TRÀN DÒNG HOẶC ĐÈ NỘI DUNG
-            GUI.Label(new Rect(padX, y, padW, 52f), "★   HƯỚNG DẪN CÁCH CHƠI   ★", _titleStyle);
-            y += 56f;
-
-            string guideContent =
-                "<b>1. MUA VÀ XÂY 3 LOẠI PHÁO CYBER (CƠ CHẾ KINGDOM RUSH):</b>\n" +
-                "• Click chuột trái lên các ô bệ đá nhấp nháy dọc đường đi để chọn mua 1 trong 3 loại pháo:\n" +
-                "  - <b>[Pháo Đơn Cyber] (70 Vàng)</b>: Sát thương 16-24, bắn nhanh, có tỉ lệ Chí mạng (Crit).\n" +
-                "  - <b>[Pháo Tên Lửa] (100 Vàng)</b>: Sát thương 38-56 nổ lan (AoE), Xuyên giáp hạng nặng 55%.\n" +
-                "  - <b>[Tháp Laser Tím Mới!] (150 Vàng)</b>: Sát thương cực lớn 85-125, Xuyên giáp 70% - vũ khí tối thượng!\n\n" +
-                "<b>2. NÂNG CẤP PHÁO 3 CẤP ĐỘ (CẤP 1 ➔ CẤP 2 ➔ CẤP 3 MAX):</b>\n" +
-                "• Click trực tiếp vào tháp đã xây để nâng cấp lên <b>Cấp 2</b> và <b>Cấp 3 Tối Thượng</b>:\n" +
-                "  - Mỗi cấp nâng cấp sẽ <b>thay đổi ngoại hình ụ súng, đế trụ và đạn bắn ra</b> kèm sát thương đột biến!\n\n" +
-                "<b>3. CHIẾN ĐẤU TỪNG ĐỢT & GIÁP QUÁI VẬT:</b>\n" +
+            string guide =
+                "<b>1. MUA VÀ XÂY 3 LOẠI PHÁO CYBER:</b>\n" +
+                "• Click các ô bệ đá dọc đường đi để chọn mua 1 trong 3 loại pháo:\n" +
+                "  - <b>[Pháo Đơn Cyber] (70 Vàng)</b>: Sát thương 16-24, bắn nhanh, có tỉ lệ Chí mạng.\n" +
+                "  - <b>[Pháo Tên Lửa] (100 Vàng)</b>: Sát thương 38-56 nổ lan, xuyên giáp 55%.\n" +
+                "  - <b>[Tháp Laser Tím] (150 Vàng)</b>: Sát thương 85-125, xuyên giáp 70% - vũ khí tối thượng!\n\n" +
+                "<b>2. NÂNG CẤP PHÁO 3 CẤP ĐỘ:</b>\n" +
+                "• Click vào tháp đã xây để nâng lên <b>Cấp 2</b> và <b>Cấp 3 Tối Thượng</b>.\n" +
+                "  - Mỗi cấp thay đổi ngoại hình ụ súng, đế trụ, đạn bắn và tăng sát thương!\n\n" +
+                "<b>3. CHIẾN ĐẤU TỪNG ĐỢT:</b>\n" +
                 "• Đầu trận bấm <b>[SẴN SÀNG CHIẾN ĐẤU]</b> ở góc dưới bên phải để bắt đầu Đợt 1.\n" +
-                "• Sau khi thắng mỗi đợt, nút sẽ đổi thành <b>[TIẾP TỤC ĐÁNH ĐỢT TIẾP THEO]</b> để bạn chủ động nâng cấp tháp!";
+                "• Thắng mỗi đợt, nút đổi thành <b>[TIẾP TỤC ĐÁNH ĐỢT TIẾP THEO]</b> để bạn chủ động nâng cấp tháp.\n" +
+                "• Bấm nút <b>Tạm dừng</b> góc trên bên phải để nghỉ giữa trận.";
 
-            GUI.Label(new Rect(padX, y, padW, 380f), guideContent, _cardDescStyle);
+            GUI.Label(new Rect(x, y, w, 430f), guide, _cardDescStyle);
 
-            // Nút quay lại
-            float btnW = 280f;
-            float btnH = 48f;
-            float btnY = panelRect.y + panelH - btnH - 22f;
-            if (GUI.Button(new Rect(centerX - btnW / 2f, btnY, btnW, btnH), "↩   QUAY LẠI TRANG CHỦ", _btnSecondary))
-            {
+            if (GUI.Button(new Rect(VW / 2f - 150f, panel.yMax - 72f, 300f, 48f), "↩   QUAY LẠI TRANG CHỦ", _btnSecondary))
                 currentState = MenuState.Home;
-            }
         }
 
         // ════════════════════════════════════════════════════════════════════
-        // KHỞI TẠO STYLES VỚI FONT CHUẨN TIẾNG VIỆT TỪ HỆ THỐNG
+        // STYLES
         // ════════════════════════════════════════════════════════════════════
+        private void ShadowLabel(Rect r, string text, GUIStyle style)
+        {
+            Color c = style.normal.textColor;
+            style.normal.textColor = new Color(0f, 0f, 0f, 0.8f);
+            GUI.Label(new Rect(r.x + 2f, r.y + 3f, r.width, r.height), text, style);
+            style.normal.textColor = c;
+            GUI.Label(r, text, style);
+        }
+
         private void InitStyles()
         {
             if (_overlayTex == null)
-                _overlayTex = MakeTex(2, 2, new Color(0.02f, 0.04f, 0.07f, 0.30f));
+                _overlayTex = MakeTex(2, 2, new Color(0.03f, 0.04f, 0.07f, 0.45f));
 
-            // Load Font hệ thống hỗ trợ tiếng Việt có dấu chuẩn 100% (Cache để không tạo lại)
             if (_fontTitle == null) _fontTitle = GetVietnameseFont(32);
-            if (_fontBtn   == null) _fontBtn   = GetVietnameseFont(18);
-            if (_fontText  == null) _fontText  = GetVietnameseFont(15);
+            if (_fontBtn == null) _fontBtn = GetVietnameseFont(18);
+            if (_fontText == null) _fontText = GetVietnameseFont(15);
             if (_fontSmall == null) _fontSmall = GetVietnameseFont(13);
 
-            Font fontTitle = _fontTitle;
-            Font fontBtn   = _fontBtn;
-            Font fontText  = _fontText;
-            Font fontSmall = _fontSmall;
+            Color gold = new Color(0.95f, 0.74f, 0.27f);
+            Color goldHi = new Color(1f, 0.90f, 0.45f);
 
-            _panelBoxStyle = new GUIStyle(GUI.skin.box);
-            _panelBoxStyle.normal.background = MakeTex(2, 2, new Color(0.06f, 0.09f, 0.14f, 0.94f));
-            _panelBoxStyle.border = new RectOffset(10, 10, 10, 10);
+            // Khung gỗ tối viền vàng
+            _panelStyle = BoxStyle(new Color(0.30f, 0.19f, 0.11f, 0.97f), new Color(0.15f, 0.09f, 0.05f, 0.97f), gold, 3);
+            _cardStyle = BoxStyle(new Color(0.24f, 0.15f, 0.09f, 0.98f), new Color(0.13f, 0.08f, 0.05f, 0.98f), new Color(0.58f, 0.40f, 0.17f), 3);
+            _cardHoverStyle = BoxStyle(new Color(0.30f, 0.20f, 0.11f, 1f), new Color(0.17f, 0.11f, 0.06f, 1f), goldHi, 4);
+            _thumbFrameStyle = BoxStyle(new Color(0.08f, 0.05f, 0.03f, 1f), new Color(0.08f, 0.05f, 0.03f, 1f), gold, 3);
+            _chipStyle = BoxStyle(new Color(0.09f, 0.06f, 0.04f, 0.95f), new Color(0.12f, 0.08f, 0.05f, 0.95f), new Color(0.45f, 0.32f, 0.15f), 2);
+            _ribbonStyle = BoxStyle(new Color(0.55f, 0.13f, 0.12f, 1f), new Color(0.38f, 0.07f, 0.07f, 1f), new Color(0.95f, 0.74f, 0.27f), 2);
 
-            _titleStyle = new GUIStyle(GUI.skin.label)
+            _titleStyle = LabelStyle(_fontTitle, 30, FontStyle.Bold, TextAnchor.MiddleCenter, goldHi);
+            _bigTitleStyle = LabelStyle(_fontTitle, 52, FontStyle.Bold, TextAnchor.MiddleCenter, goldHi);
+            _subTitleStyle = LabelStyle(_fontText, 16, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.95f, 0.85f));
+            _cardTitleStyle = LabelStyle(_fontBtn, 18, FontStyle.Bold, TextAnchor.MiddleCenter, goldHi);
+            _starStyle = LabelStyle(_fontText, 15, FontStyle.Bold, TextAnchor.MiddleCenter, gold);
+            _chipTextStyle = LabelStyle(_fontSmall, 13, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.98f, 0.93f, 0.80f));
+            _infoTextStyle = LabelStyle(_fontSmall, 13, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.80f, 0.72f, 0.58f));
+
+            _cardDescStyle = LabelStyle(_fontText, 14, FontStyle.Normal, TextAnchor.UpperLeft, new Color(0.96f, 0.92f, 0.84f));
+            _cardDescStyle.wordWrap = true;
+            _cardDescStyle.richText = true;
+
+            _btnPrimary = ButtonStyle(19, new Color(0.38f, 0.82f, 0.26f), new Color(0.14f, 0.50f, 0.12f), gold, Color.white);
+            _btnSecondary = ButtonStyle(16, new Color(0.30f, 0.58f, 0.92f), new Color(0.12f, 0.30f, 0.62f), gold, Color.white);
+            _btnDanger = ButtonStyle(15, new Color(0.86f, 0.30f, 0.24f), new Color(0.52f, 0.10f, 0.10f), gold, new Color(1f, 0.92f, 0.90f));
+            _btnLocked = ButtonStyle(15, new Color(0.40f, 0.40f, 0.42f), new Color(0.24f, 0.24f, 0.26f), new Color(0.5f, 0.5f, 0.5f), new Color(0.75f, 0.75f, 0.75f));
+            _btnLocked.hover.background = _btnLocked.normal.background;
+            _btnLocked.active.background = _btnLocked.normal.background;
+        }
+
+        private GUIStyle LabelStyle(Font font, int size, FontStyle fs, TextAnchor anchor, Color color)
+        {
+            GUIStyle st = new GUIStyle(GUI.skin.label)
             {
-                font = fontTitle,
+                font = font,
+                fontSize = size,
+                fontStyle = fs,
+                alignment = anchor,
+                richText = true
+            };
+            st.normal.textColor = color;
+            return st;
+        }
+
+        private GUIStyle BoxStyle(Color top, Color bottom, Color border, int bw)
+        {
+            GUIStyle st = new GUIStyle(GUI.skin.box);
+            st.normal.background = MakeRounded(48, 14, top, bottom, border, bw);
+            st.border = new RectOffset(18, 18, 18, 18);
+            st.padding = new RectOffset(0, 0, 0, 0);
+            st.margin = new RectOffset(0, 0, 0, 0);
+            return st;
+        }
+
+        private GUIStyle ButtonStyle(int fontSize, Color top, Color bottom, Color border, Color text)
+        {
+            GUIStyle st = new GUIStyle(GUI.skin.button)
+            {
+                font = _fontBtn,
                 fontStyle = FontStyle.Bold,
-                fontSize = 30,
+                fontSize = fontSize,
                 alignment = TextAnchor.MiddleCenter
             };
-            _titleStyle.normal.textColor = new Color(1f, 0.88f, 0.25f, 1f);
-
-            _subTitleStyle = new GUIStyle(GUI.skin.label)
-            {
-                font = fontText,
-                fontStyle = FontStyle.Normal,
-                fontSize = 16,
-                alignment = TextAnchor.MiddleCenter
-            };
-            _subTitleStyle.normal.textColor = new Color(0.88f, 0.94f, 1f, 0.95f);
-
-            _btnPrimary = new GUIStyle(GUI.skin.button)
-            {
-                font = fontBtn,
-                fontStyle = FontStyle.Bold,
-                fontSize = 19,
-                alignment = TextAnchor.MiddleCenter
-            };
-            _btnPrimary.normal.background = MakeTex(2, 2, new Color(0.12f, 0.65f, 0.20f, 0.98f));
-            _btnPrimary.hover.background = MakeTex(2, 2, new Color(0.18f, 0.88f, 0.28f, 1f));
-            _btnPrimary.active.background = MakeTex(2, 2, new Color(0.06f, 0.42f, 0.12f, 1f));
-            _btnPrimary.normal.textColor = Color.white;
-            _btnPrimary.hover.textColor = Color.white;
-
-            _btnSecondary = new GUIStyle(GUI.skin.button)
-            {
-                font = fontBtn,
-                fontStyle = FontStyle.Bold,
-                fontSize = 16,
-                alignment = TextAnchor.MiddleCenter
-            };
-            _btnSecondary.normal.background = MakeTex(2, 2, new Color(0.14f, 0.38f, 0.70f, 0.96f));
-            _btnSecondary.hover.background = MakeTex(2, 2, new Color(0.22f, 0.54f, 0.92f, 1f));
-            _btnSecondary.active.background = MakeTex(2, 2, new Color(0.08f, 0.24f, 0.48f, 1f));
-            _btnSecondary.normal.textColor = Color.white;
-            _btnSecondary.hover.textColor = Color.white;
-
-            _btnLocked = new GUIStyle(GUI.skin.button)
-            {
-                font = fontBtn,
-                fontStyle = FontStyle.Bold,
-                fontSize = 15,
-                alignment = TextAnchor.MiddleCenter
-            };
-            _btnLocked.normal.background = MakeTex(2, 2, new Color(0.24f, 0.27f, 0.32f, 0.85f));
-            _btnLocked.normal.textColor = new Color(0.72f, 0.72f, 0.72f, 0.85f);
-
-            _btnDanger = new GUIStyle(GUI.skin.button)
-            {
-                font = fontBtn,
-                fontStyle = FontStyle.Bold,
-                fontSize = 15,
-                alignment = TextAnchor.MiddleCenter
-            };
-            _btnDanger.normal.background = MakeTex(2, 2, new Color(0.58f, 0.12f, 0.12f, 0.92f));
-            _btnDanger.hover.background = MakeTex(2, 2, new Color(0.82f, 0.18f, 0.18f, 1f));
-            _btnDanger.normal.textColor = new Color(1f, 0.85f, 0.85f, 1f);
-            _btnDanger.hover.textColor = Color.white;
-
-            _cardBoxStyle = new GUIStyle(GUI.skin.box);
-            _cardBoxStyle.normal.background = MakeTex(2, 2, new Color(0.09f, 0.13f, 0.19f, 0.96f));
-            _cardBoxStyle.border = new RectOffset(8, 8, 8, 8);
-
-            _cardTitleStyle = new GUIStyle(GUI.skin.label)
-            {
-                font = fontBtn,
-                fontStyle = FontStyle.Bold,
-                fontSize = 16,
-                alignment = TextAnchor.UpperLeft
-            };
-            _cardTitleStyle.normal.textColor = new Color(1f, 0.92f, 0.45f, 1f);
-
-            _cardDescStyle = new GUIStyle(GUI.skin.label)
-            {
-                font = fontText,
-                fontSize = 14,
-                wordWrap = true
-            };
-            _cardDescStyle.normal.textColor = new Color(0.90f, 0.94f, 1f, 0.96f);
-
-            _infoTextStyle = new GUIStyle(GUI.skin.label)
-            {
-                font = fontSmall,
-                fontSize = 13,
-                alignment = TextAnchor.MiddleCenter
-            };
-            _infoTextStyle.normal.textColor = new Color(0.65f, 0.75f, 0.85f, 0.9f);
+            Texture2D normal = MakeRounded(48, 14, top, bottom, border, 3);
+            Texture2D hover = MakeRounded(48, 14, Color.Lerp(top, Color.white, 0.25f), Color.Lerp(bottom, Color.white, 0.18f), new Color(1f, 0.92f, 0.5f), 3);
+            Texture2D active = MakeRounded(48, 14, Color.Lerp(bottom, Color.black, 0.15f), Color.Lerp(bottom, Color.black, 0.35f), border, 3);
+            st.normal.background = normal;
+            st.hover.background = hover;
+            st.active.background = active;
+            st.focused.background = normal;
+            st.border = new RectOffset(18, 18, 18, 18);
+            st.padding = new RectOffset(8, 8, 4, 6);
+            st.margin = new RectOffset(0, 0, 0, 0);
+            st.normal.textColor = text;
+            st.hover.textColor = Color.white;
+            st.active.textColor = text;
+            st.focused.textColor = text;
+            return st;
         }
 
         private static Font GetVietnameseFont(int size)
         {
-            Font f = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Tahoma" }, size);
-            return f;
+            return Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Tahoma" }, size);
         }
 
         private static Texture2D MakeTex(int w, int h, Color col)
@@ -444,6 +387,42 @@ namespace TowerDefense.UI
             t.SetPixels(pix);
             t.Apply();
             return t;
+        }
+
+        /// <summary>Tạo texture hình chữ nhật bo góc có viền, tô gradient dọc (dùng cho 9-slice).</summary>
+        private static Texture2D MakeRounded(int size, int radius, Color top, Color bottom, Color border, int borderWidth)
+        {
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.filterMode = FilterMode.Bilinear;
+            Color[] pix = new Color[size * size];
+            float half = size * 0.5f;
+            float inner = half - radius;
+            for (int y = 0; y < size; y++)
+            {
+                float t = y / (float)(size - 1); // y=0 là đáy
+                Color fill = Color.Lerp(bottom, top, t);
+                for (int x = 0; x < size; x++)
+                {
+                    float px = Mathf.Abs(x + 0.5f - half) - inner;
+                    float py = Mathf.Abs(y + 0.5f - half) - inner;
+                    float outside = new Vector2(Mathf.Max(px, 0f), Mathf.Max(py, 0f)).magnitude;
+                    float d = outside + Mathf.Min(Mathf.Max(px, py), 0f) - radius; // <0 là bên trong
+                    float alpha = Mathf.Clamp01(0.5f - d);
+
+                    Color c = fill;
+                    if (d > -borderWidth)
+                        c = border;
+                    else if (d > -borderWidth - 2f)
+                        c = Color.Lerp(fill, Color.white, 0.12f); // viền sáng bên trong tạo chiều sâu
+
+                    c.a *= alpha;
+                    pix[y * size + x] = c;
+                }
+            }
+            tex.SetPixels(pix);
+            tex.Apply();
+            return tex;
         }
     }
 }
