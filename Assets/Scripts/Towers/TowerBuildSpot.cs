@@ -235,17 +235,21 @@ namespace TowerDefense.Towers
 
         private void CalculatePopupRect(float width, float height)
         {
+            float uiScale = Mathf.Clamp(Screen.height / 1080f, 0.85f, 1.85f);
+            float scaledW = width * uiScale;
+            float scaledH = height * uiScale;
+
             if (mainCamera == null) mainCamera = Camera.main;
             Vector3 screenPt = mainCamera != null
                 ? mainCamera.WorldToScreenPoint(transform.position)
                 : new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
 
-            float guiY = Screen.height - screenPt.y - height - 30f;
-            float guiX = screenPt.x - width / 2f;
-            guiX = Mathf.Clamp(guiX, 15f, Screen.width  - width - 15f);
-            guiY = Mathf.Clamp(guiY, 15f, Screen.height - height - 15f);
+            float guiY = Screen.height - screenPt.y - scaledH - 30f * uiScale;
+            float guiX = screenPt.x - scaledW / 2f;
+            guiX = Mathf.Clamp(guiX, 15f, Screen.width  - scaledW - 15f);
+            guiY = Mathf.Clamp(guiY, 15f, Screen.height - scaledH - 15f);
 
-            popupRect = new Rect(guiX, guiY, width, height);
+            popupRect = new Rect(guiX, guiY, scaledW, scaledH);
         }
 
         // ─── Vẽ GUI Popup ──────────────────────────────────────────────────
@@ -268,14 +272,16 @@ namespace TowerDefense.Towers
         // Popup Xây Tháp Mới (3 Loại Pháo: Pháo Đơn 70, Tên Lửa 100, Tháp Laser Tím 150)
         private void DrawBuildPopup()
         {
+            float uiScale = Mathf.Clamp(Screen.height / 1080f, 0.85f, 1.85f);
             GUI.Box(popupRect, "", _boxStyle);
 
-            float innerX = popupRect.x + 14f;
-            float innerY = popupRect.y + 12f;
-            float btnW   = BUILD_POPUP_W - 28f;
+            float innerX = popupRect.x + 16f * uiScale;
+            float innerY = popupRect.y + 14f * uiScale;
+            float btnW   = popupRect.width - 32f * uiScale;
+            float btnH   = 46f * uiScale;
 
-            GUI.Label(new Rect(innerX, innerY, btnW, 28f), "CHỌN LOẠI PHÁO ĐỂ XÂY:", _titleStyle);
-            innerY += 32f;
+            GUI.Label(new Rect(innerX, innerY, btnW, 30f * uiScale), "CHỌN LOẠI PHÁO ĐỂ XÂY:", _titleStyle);
+            innerY += 34f * uiScale;
 
             // 1. Nút Pháo Đơn Cyber (70 Vàng)
             bool canAffordCannon = GameManager.Instance != null && GameManager.Instance.CanAfford(cannonCost);
@@ -283,12 +289,12 @@ namespace TowerDefense.Towers
             if (!canAffordCannon) cannonLabel += "  (Thiếu vàng)";
 
             GUI.enabled = cannonTowerPrefab != null && canAffordCannon;
-            if (GUI.Button(new Rect(innerX, innerY, btnW, 44f), cannonLabel, _btnGreen))
+            if (GUI.Button(new Rect(innerX, innerY, btnW, btnH), cannonLabel, _btnGreen))
             {
                 Build(cannonTowerPrefab, cannonCost, TowerType.Cannon);
             }
             GUI.enabled = true;
-            innerY += 50f;
+            innerY += btnH + 6f * uiScale;
 
             // 2. Nút Pháo Tên Lửa (100 Vàng)
             bool canAffordRocket = GameManager.Instance != null && GameManager.Instance.CanAfford(rocketCost);
@@ -296,12 +302,12 @@ namespace TowerDefense.Towers
             if (!canAffordRocket) rocketLabel += "  (Thiếu vàng)";
 
             GUI.enabled = rocketTowerPrefab != null && canAffordRocket;
-            if (GUI.Button(new Rect(innerX, innerY, btnW, 44f), rocketLabel, _btnBlue))
+            if (GUI.Button(new Rect(innerX, innerY, btnW, btnH), rocketLabel, _btnBlue))
             {
                 Build(rocketTowerPrefab, rocketCost, TowerType.Rocket);
             }
             GUI.enabled = true;
-            innerY += 50f;
+            innerY += btnH + 6f * uiScale;
 
             // 3. Nút Tháp Laser/Plasma Tím Mới (150 Vàng - Sát thương siêu to & Xuyên giáp cao!)
             bool canAffordLaser = GameManager.Instance != null && GameManager.Instance.CanAfford(laserCost);
@@ -310,15 +316,17 @@ namespace TowerDefense.Towers
 
             GameObject laserPrefabToUse = laserTowerPrefab != null ? laserTowerPrefab : cannonTowerPrefab;
             GUI.enabled = laserPrefabToUse != null && canAffordLaser;
-            if (GUI.Button(new Rect(innerX, innerY, btnW, 44f), laserLabel, _btnPurple))
+            if (GUI.Button(new Rect(innerX, innerY, btnW, btnH), laserLabel, _btnPurple))
             {
                 Build(laserPrefabToUse, laserCost, TowerType.Laser);
             }
             GUI.enabled = true;
-            innerY += 50f;
+            innerY += btnH + 6f * uiScale;
 
             // Nút Huỷ
-            if (GUI.Button(new Rect(innerX + btnW / 2f - 44f, innerY, 88f, 26f), "Đóng", _btnCancel))
+            float cancelW = 100f * uiScale;
+            float cancelH = 28f * uiScale;
+            if (GUI.Button(new Rect(innerX + btnW / 2f - cancelW / 2f, innerY, cancelW, cancelH), "Đóng", _btnCancel))
             {
                 CloseAllMenus();
             }
@@ -327,23 +335,24 @@ namespace TowerDefense.Towers
         // Popup Nâng Cấp Tháp (Hỗ trợ Cấp 1 -> Cấp 2 -> Cấp 3 MAX)
         private void DrawUpgradePopup()
         {
+            float uiScale = Mathf.Clamp(Screen.height / 1080f, 0.85f, 1.85f);
             GUI.Box(popupRect, "", _boxStyle);
 
-            float innerX = popupRect.x + 16f;
-            float innerY = popupRect.y + 14f;
-            float btnW   = UPGRADE_POPUP_W - 32f;
+            float innerX = popupRect.x + 16f * uiScale;
+            float innerY = popupRect.y + 14f * uiScale;
+            float btnW   = popupRect.width - 32f * uiScale;
 
             string levelBadge = currentTower.Level >= currentTower.MaxLevel
                 ? "★★★ (CẤP 3 TỐI ĐA)"
                 : (currentTower.Level == 2 ? "★★ (Cấp 2/3)" : "★ (Cấp 1/3)");
-            GUI.Label(new Rect(innerX, innerY, btnW, 28f), $"{currentTower.TowerTypeName}  {levelBadge}", _titleStyle);
-            innerY += 30f;
+            GUI.Label(new Rect(innerX, innerY, btnW, 30f * uiScale), $"{currentTower.TowerTypeName}  {levelBadge}", _titleStyle);
+            innerY += 32f * uiScale;
 
             // Thông số chi tiết tháp
             int armorPenPct = Mathf.RoundToInt(currentTower.ArmorPenetration * 100f);
             string stats = $"Sát thương: <b>{currentTower.DamageRangeText}</b>  |  Tầm: <b>{currentTower.AttackRange:F1}</b>  |  Phá giáp: <b>{armorPenPct}%</b>";
-            GUI.Label(new Rect(innerX, innerY, btnW, 24f), stats, _subTitleStyle);
-            innerY += 30f;
+            GUI.Label(new Rect(innerX, innerY, btnW, 26f * uiScale), stats, _subTitleStyle);
+            innerY += 32f * uiScale;
 
             if (currentTower.CanUpgrade)
             {
@@ -354,26 +363,29 @@ namespace TowerDefense.Towers
                 string upLabel = $"★  NÂNG CẤP LÊN CẤP {nextLv}  —  {upCost} Vàng";
                 if (!canAfford) upLabel += "  (Thiếu vàng)";
 
+                float upBtnH = 48f * uiScale;
                 GUI.enabled = canAfford;
-                if (GUI.Button(new Rect(innerX, innerY, btnW, 46f), upLabel, _btnYellow))
+                if (GUI.Button(new Rect(innerX, innerY, btnW, upBtnH), upLabel, _btnYellow))
                 {
                     PerformUpgrade(upCost);
                 }
                 GUI.enabled = true;
-                innerY += 54f;
+                innerY += upBtnH + 6f * uiScale;
 
                 // Chi tiết thông số tăng thêm khi nâng cấp lên Cấp 2 hoặc Cấp 3
-                GUI.Label(new Rect(innerX, innerY, btnW, 24f), $"<color=#A0FFA0>+ Cấp {nextLv}: {currentTower.NextUpgradeBonusSummary}</color>", _subTitleStyle);
-                innerY += 30f;
+                GUI.Label(new Rect(innerX, innerY, btnW, 26f * uiScale), $"<color=#A0FFA0>+ Cấp {nextLv}: {currentTower.NextUpgradeBonusSummary}</color>", _subTitleStyle);
+                innerY += 32f * uiScale;
             }
             else
             {
-                GUI.Label(new Rect(innerX, innerY, btnW, 36f), "★ THÁP ĐÃ ĐẠT CẤP 3 TỐI ĐA (LEVEL 3 MAX)", _titleStyle);
-                innerY += 46f;
+                GUI.Label(new Rect(innerX, innerY, btnW, 38f * uiScale), "★ THÁP ĐÃ ĐẠT CẤP 3 TỐI ĐA (LEVEL 3 MAX)", _titleStyle);
+                innerY += 48f * uiScale;
             }
 
             // Nút Đóng
-            if (GUI.Button(new Rect(innerX + btnW / 2f - 44f, innerY, 88f, 26f), "Đóng", _btnCancel))
+            float cancelW = 100f * uiScale;
+            float cancelH = 28f * uiScale;
+            if (GUI.Button(new Rect(innerX + btnW / 2f - cancelW / 2f, innerY, cancelW, cancelH), "Đóng", _btnCancel))
             {
                 CloseAllMenus();
             }
@@ -509,48 +521,54 @@ namespace TowerDefense.Towers
         private static Font _fontUi;
         private static Font _fontTitleUi;
 
+        private static float _lastUiScale = -1f;
+
         private static void InitStyles()
         {
-            if (_stylesInit && _boxStyle != null && _boxStyle.normal.background != null && _btnPurple != null) return;
+            float uiScale = Mathf.Clamp(Screen.height / 1080f, 0.85f, 1.85f);
+            if (_stylesInit && Mathf.Abs(_lastUiScale - uiScale) < 0.02f && _boxStyle != null && _boxStyle.normal.background != null && _btnPurple != null) return;
             _stylesInit = true;
+            _lastUiScale = uiScale;
 
-            if (_fontUi == null)
-                _fontUi = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Tahoma" }, 14);
-            if (_fontTitleUi == null)
-                _fontTitleUi = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Tahoma" }, 16);
+            int szTitle = Mathf.RoundToInt(17 * uiScale);
+            int szSub   = Mathf.RoundToInt(13 * uiScale);
+            int szBtn   = Mathf.RoundToInt(15 * uiScale);
+
+            _fontUi = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Tahoma" }, szSub);
+            _fontTitleUi = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Tahoma" }, szTitle);
 
             Color gold = new Color(0.95f, 0.74f, 0.27f);
 
             _boxStyle = new GUIStyle(GUI.skin.box);
-            _boxStyle.normal.background = MakeRounded(48, 14, new Color(0.26f, 0.16f, 0.10f, 0.98f), new Color(0.13f, 0.08f, 0.05f, 0.98f), gold, 2);
+            _boxStyle.normal.background = MakeRounded(48, 14, new Color(0.26f, 0.16f, 0.10f, 0.98f), new Color(0.13f, 0.08f, 0.05f, 0.98f), gold, Mathf.Max(2, Mathf.RoundToInt(2.5f * uiScale)));
             _boxStyle.border = new RectOffset(16, 16, 16, 16);
 
             _titleStyle = new GUIStyle(GUI.skin.label);
             _titleStyle.font = _fontTitleUi;
             _titleStyle.fontStyle = FontStyle.Bold;
-            _titleStyle.fontSize  = 16;
+            _titleStyle.fontSize  = szTitle;
             _titleStyle.normal.textColor = new Color(1f, 0.90f, 0.40f, 1f);
 
             _subTitleStyle = new GUIStyle(GUI.skin.label);
             _subTitleStyle.font = _fontUi;
-            _subTitleStyle.fontSize = 12;
+            _subTitleStyle.fontSize = szSub;
             _subTitleStyle.normal.textColor = new Color(0.95f, 0.92f, 0.85f, 0.95f);
             _subTitleStyle.richText = true;
 
             // Nút Pháo Đơn Cyber (xanh lá bo góc viền vàng)
-            _btnGreen = CreateButtonStyle(14, new Color(0.38f, 0.82f, 0.26f), new Color(0.14f, 0.50f, 0.12f), gold, Color.white);
+            _btnGreen = CreateButtonStyle(szBtn, new Color(0.38f, 0.82f, 0.26f), new Color(0.14f, 0.50f, 0.12f), gold, Color.white);
 
             // Nút Pháo Tên Lửa (xanh dương bo góc viền vàng)
-            _btnBlue = CreateButtonStyle(14, new Color(0.30f, 0.58f, 0.92f), new Color(0.12f, 0.30f, 0.62f), gold, Color.white);
+            _btnBlue = CreateButtonStyle(szBtn, new Color(0.30f, 0.58f, 0.92f), new Color(0.12f, 0.30f, 0.62f), gold, Color.white);
 
             // Nút Tháp Laser/Plasma Tím (Tím Hoàng Gia bo góc viền vàng)
-            _btnPurple = CreateButtonStyle(14, new Color(0.65f, 0.22f, 0.92f), new Color(0.35f, 0.08f, 0.52f), gold, new Color(1f, 0.94f, 1f, 1f));
+            _btnPurple = CreateButtonStyle(szBtn, new Color(0.65f, 0.22f, 0.92f), new Color(0.35f, 0.08f, 0.52f), gold, new Color(1f, 0.94f, 1f, 1f));
 
             // Nút Nâng Cấp Level 2 & 3 (Cam Vàng bo góc viền vàng)
-            _btnYellow = CreateButtonStyle(14, new Color(1f, 0.68f, 0.15f), new Color(0.70f, 0.35f, 0.04f), gold, Color.white);
+            _btnYellow = CreateButtonStyle(szBtn, new Color(1f, 0.68f, 0.15f), new Color(0.70f, 0.35f, 0.04f), gold, Color.white);
 
             // Nút Huỷ (đỏ gỗ bo góc viền vàng)
-            _btnCancel = CreateButtonStyle(12, new Color(0.75f, 0.22f, 0.18f), new Color(0.42f, 0.10f, 0.10f), gold, new Color(1f, 0.90f, 0.90f));
+            _btnCancel = CreateButtonStyle(Mathf.RoundToInt(13 * uiScale), new Color(0.75f, 0.22f, 0.18f), new Color(0.42f, 0.10f, 0.10f), gold, new Color(1f, 0.90f, 0.90f));
         }
 
         private static GUIStyle CreateButtonStyle(int fontSize, Color top, Color bottom, Color border, Color text)
