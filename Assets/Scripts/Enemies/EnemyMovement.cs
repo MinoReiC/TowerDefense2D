@@ -15,8 +15,9 @@ namespace TowerDefense.Enemies
         [SerializeField] private float spriteAngleOffset = 0f;
 
         private WaypointPath path;
+        private System.Collections.Generic.List<Vector3> points;   // Đường cong mịn khớp lòng đường trên ảnh nền
         private int currentWaypointIndex = 0;
-        private Transform targetWaypoint;
+        private bool hasTarget = false;
 
         public float MoveSpeed => moveSpeed;
         public float AngleOffset => spriteAngleOffset;
@@ -25,14 +26,18 @@ namespace TowerDefense.Enemies
         {
             path = waypointPath;
             currentWaypointIndex = 0;
-            if (path != null && path.Count > 0)
+            hasTarget = false;
+            points = path != null ? path.GetSmoothPoints() : null;
+            if (points != null && points.Count > 0)
             {
-                targetWaypoint = path.GetWaypoint(0);
-                transform.position = targetWaypoint.position;
+                transform.position = points[0];
                 currentWaypointIndex = 1;
-                if (path.Count > 1)
+                hasTarget = points.Count > 1;
+                if (hasTarget)
                 {
-                    targetWaypoint = path.GetWaypoint(1);
+                    Vector3 d = points[1] - points[0];
+                    float a = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg + spriteAngleOffset;
+                    transform.rotation = Quaternion.Euler(0, 0, a);
                 }
             }
         }
@@ -49,34 +54,49 @@ namespace TowerDefense.Enemies
 
         private void Update()
         {
-            if (targetWaypoint == null) return;
+            if (!hasTarget || points == null) return;
 
-            Vector3 direction = targetWaypoint.position - transform.position;
-            direction.z = 0f;
+            // Di chuyển dọc theo đường cong, quãng đường dư được chuyển tiếp sang điểm kế tiếp
+            // để tốc độ đều và không bị khựng ở các điểm mẫu.
+            float remaining = moveSpeed * Time.deltaTime;
+            Vector3 pos = transform.position;
+            Vector3 direction = Vector3.zero;
 
-            // Di chuyển thẳng về waypoint mục tiêu
-            transform.position = Vector3.MoveTowards(transform.position, targetWaypoint.position, moveSpeed * Time.deltaTime);
+            while (remaining > 0f && currentWaypointIndex < points.Count)
+            {
+                Vector3 target = points[currentWaypointIndex];
+                Vector3 delta = target - pos;
+                delta.z = 0f;
+                float dist = delta.magnitude;
+                if (dist > 0.0001f) direction = delta;
 
-            // Xoay đầu xe/máy bay chuẩn xác theo hướng di chuyển
-            if (direction.sqrMagnitude > 0.001f)
+                if (dist <= remaining)
+                {
+                    pos = target;
+                    remaining -= dist;
+                    currentWaypointIndex++;
+                }
+                else
+                {
+                    pos += delta / dist * remaining;
+                    remaining = 0f;
+                }
+            }
+            transform.position = pos;
+
+            // Xoay đầu xe/máy bay mượt theo hướng tiếp tuyến của đường cong
+            if (direction.sqrMagnitude > 0.000001f)
             {
                 float targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + spriteAngleOffset;
                 Quaternion targetRot = Quaternion.Euler(0, 0, targetAngle);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
             }
 
-            // Kiểm tra đã đến waypoint chưa
-            if (Vector3.Distance(transform.position, targetWaypoint.position) <= reachThreshold)
+            // Đã đi hết đường → vào căn cứ
+            if (currentWaypointIndex >= points.Count)
             {
-                currentWaypointIndex++;
-                if (path != null && currentWaypointIndex < path.Count)
-                {
-                    targetWaypoint = path.GetWaypoint(currentWaypointIndex);
-                }
-                else
-                {
-                    OnReachDestination();
-                }
+                hasTarget = false;
+                OnReachDestination();
             }
         }
 
