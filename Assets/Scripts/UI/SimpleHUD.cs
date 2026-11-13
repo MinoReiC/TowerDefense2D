@@ -158,51 +158,49 @@ namespace TowerDefense.UI
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // 1. HUD GÓC TRÊN TRÁI: TIỀN, THANH MÁU, THÁP, ĐỢT QUÁI (PHÓNG TO RÕ NÉT)
+        // 1. HUD GÓC TRÊN TRÁI: NHỎ GỌN PHONG CÁCH KINGDOM RUSH (KHÔNG CHE BỆ PHÁO)
         // ────────────────────────────────────────────────────────────────────
         private void DrawResourceAndWaveHUD(int gold, int hp, int builtCount, int maxSpots,
             int currentWave, int totalWaves, bool isEndless, int aliveCount, bool isReady, string mapLabel, string activeScene, float scale)
         {
-            // Chiều rộng bảo đảm không che ô bệ pháo BuildSpot_2 (-3.8, 3.8) ở mọi độ phân giải
-            float maxHudW = Mathf.Max(420f, Screen.width * 0.228f);
-            float hudW    = Mathf.Min(maxHudW, 460f * scale);
-            float hudH    = 192f * scale;
-            float marginX = 18f * scale;
-            float marginY = 16f * scale;
+            // Thiết kế nhỏ gọn (~12.5% chiều ngang màn hình) để không bao giờ chạm tới ô đặt pháo trên cùng
+            float hudW    = 252f * scale;
+            float hudH    = 76f * scale;
+            float marginX = 12f * scale;
+            float marginY = 10f * scale;
             Rect hudRect  = new Rect(marginX, marginY, hudW, hudH);
 
             GUI.Box(hudRect, "", _hudBoxStyle);
 
-            float padX = hudRect.x + 12f * scale;
-            float padW = hudRect.width - 24f * scale;
-            float curY = hudRect.y + 12f * scale;
+            float padX = hudRect.x + 7f * scale;
+            float padW = hudRect.width - 14f * scale;
+            float curY = hudRect.y + 6f * scale;
 
-            // Hàng 1: 3 Huy hiệu (Chips) thông số mở rộng: Vàng | Thanh Máu | Tháp
-            float chipGap = 8f * scale;
+            // Hàng 1: 3 Huy hiệu (Chips) gọn gàng: Vàng | Máu | Tháp
+            float chipGap = 5f * scale;
             float chipW   = (padW - chipGap * 2f) / 3f;
-            float chipH   = 60f * scale;
+            float chipH   = 36f * scale;
 
-            // 1. Chip Tiền Vàng (Số to nổi bật)
+            // 1. Chip Tiền Vàng
             Rect chipGoldRect = new Rect(padX, curY, chipW, chipH);
             GUI.Box(chipGoldRect, "", _chipStyle);
-            GUI.Label(new Rect(chipGoldRect.x, chipGoldRect.y + 4f * scale, chipGoldRect.width, 18f * scale), "★ TIỀN VÀNG", _chipTitleGoldStyle);
-            GUI.Label(new Rect(chipGoldRect.x, chipGoldRect.y + 22f * scale, chipGoldRect.width, 32f * scale), $"<b>{gold}</b>", _chipValGoldStyle);
+            GUI.Label(new Rect(chipGoldRect.x, chipGoldRect.y + 1f * scale, chipGoldRect.width, 13f * scale), "★ VÀNG", _chipTitleGoldStyle);
+            GUI.Label(new Rect(chipGoldRect.x, chipGoldRect.y + 13f * scale, chipGoldRect.width, 21f * scale), $"<b>{gold}</b>", _chipValGoldStyle);
 
-            // 2. Chip Máu Căn Cứ & Thanh Máu Visual Đồ Họa
+            // 2. Chip Máu Căn Cứ & Thanh Máu
             int maxHp = (activeScene.Contains("Level3") || activeScene.Contains("Map3")) ? 30
                 : ((activeScene.Contains("Level2") || activeScene.Contains("Map2")) ? 25 : 20);
             float hpPercent = Mathf.Clamp01((float)hp / maxHp);
 
             Rect chipHpRect = new Rect(padX + chipW + chipGap, curY, chipW, chipH);
             GUI.Box(chipHpRect, "", _chipStyle);
-            GUI.Label(new Rect(chipHpRect.x, chipHpRect.y + 3f * scale, chipHpRect.width, 18f * scale), "♥ CĂN CỨ", _chipTitleHpStyle);
-            GUI.Label(new Rect(chipHpRect.x, chipHpRect.y + 20f * scale, chipHpRect.width, 24f * scale), $"<b>{hp} / {maxHp}</b>", _chipValHpStyle);
+            GUI.Label(new Rect(chipHpRect.x, chipHpRect.y + 1f * scale, chipHpRect.width, 13f * scale), "♥ MÁU", _chipTitleHpStyle);
+            GUI.Label(new Rect(chipHpRect.x, chipHpRect.y + 12f * scale, chipHpRect.width, 17f * scale), $"<b>{hp}/{maxHp}</b>", _chipValHpStyle);
 
-            // Thanh tiến trình Máu Visual dày dặn, đổi màu sinh động
             if (_whiteTex != null)
             {
-                float barH = 7f * scale;
-                Rect hpBarBg = new Rect(chipHpRect.x + 8f * scale, chipHpRect.y + chipH - barH - 6f * scale, chipHpRect.width - 16f * scale, barH);
+                float barH = 4f * scale;
+                Rect hpBarBg = new Rect(chipHpRect.x + 5f * scale, chipHpRect.y + chipH - barH - 3f * scale, chipHpRect.width - 10f * scale, barH);
                 GUI.color = new Color(0.12f, 0.08f, 0.06f, 0.95f);
                 GUI.DrawTexture(hpBarBg, _whiteTex);
 
@@ -215,44 +213,35 @@ namespace TowerDefense.UI
                 GUI.color = Color.white;
             }
 
-            // 3. Chip Tháp Pháo (Số lượng tháp xây dựng)
+            // 3. Chip Tháp Pháo
             Rect chipTowerRect = new Rect(padX + (chipW + chipGap) * 2f, curY, chipW, chipH);
             GUI.Box(chipTowerRect, "", _chipStyle);
-            GUI.Label(new Rect(chipTowerRect.x, chipTowerRect.y + 4f * scale, chipTowerRect.width, 18f * scale), "THÁP PHÁO", _chipTitleTowerStyle);
-            GUI.Label(new Rect(chipTowerRect.x, chipTowerRect.y + 22f * scale, chipTowerRect.width, 32f * scale), $"<b>{builtCount}/{maxSpots}</b>", _chipValTowerStyle);
+            GUI.Label(new Rect(chipTowerRect.x, chipTowerRect.y + 1f * scale, chipTowerRect.width, 13f * scale), "THÁP", _chipTitleTowerStyle);
+            GUI.Label(new Rect(chipTowerRect.x, chipTowerRect.y + 13f * scale, chipTowerRect.width, 21f * scale), $"<b>{builtCount}/{maxSpots}</b>", _chipValTowerStyle);
 
-            curY += chipH + 10f * scale;
+            curY += chipH + 4f * scale;
 
-            // Hàng 2: Dải Ribbon đợt quái to bản
-            float ribbonH = 36f * scale;
+            // Hàng 2: Dải Ribbon đợt quái nhỏ gọn
+            float ribbonH = 22f * scale;
             Rect ribbonRect = new Rect(padX, curY, padW, ribbonH);
+            string shortMap = activeScene.Contains("Level3") ? "MÀN 3" : (activeScene.Contains("Level2") ? "MÀN 2" : "MÀN 1");
             if (!isReady)
             {
                 GUI.Box(ribbonRect, "", _ribbonGreenStyle);
                 string prepText = currentWave <= 0
-                    ? $"[{mapLabel}]  •  CHUẨN BỊ ({totalWaves} ĐỢT) — CHỜ SẴN SÀNG"
-                    : $"[{mapLabel}]  •  THẮNG ĐỢT {currentWave}/{totalWaves} — CHỜ TIẾP TỤC";
+                    ? $"{shortMap} • CHUẨN BỊ ({totalWaves} ĐỢT)"
+                    : $"{shortMap} • XONG ĐỢT {currentWave}/{totalWaves}";
                 GUI.Label(ribbonRect, prepText, _waveTextStyle);
             }
             else
             {
                 GUI.Box(ribbonRect, "", _ribbonStyle);
                 string waveText = isEndless
-                    ? $"[{mapLabel}]  •  ĐỢT {currentWave} (VÔ TẬN)"
-                    : $"[{mapLabel}]  •  ĐỢT QUÁI: {currentWave}/{totalWaves}";
-                if (aliveCount > 0) waveText += $"  (CÒN {aliveCount} QUÁI)";
+                    ? $"{shortMap} • ĐỢT {currentWave} (VÔ TẬN)"
+                    : $"{shortMap} • ĐỢT QUÁI: {currentWave}/{totalWaves}";
+                if (aliveCount > 0) waveText += $" ({aliveCount})";
                 GUI.Label(ribbonRect, waveText, _waveTextStyle);
             }
-
-            curY += ribbonH + 8f * scale;
-
-            // Hàng 3: Gợi ý thao tác ngắn gọn, sắc nét
-            float subLineH = 19f * scale;
-            GUI.Label(new Rect(padX + 2f, curY, padW, subLineH),
-                "• <b>Bấm ô bệ</b>: Pháo Đơn (70) / Tên Lửa (100) / Laser Tím (150)", _subTextStyle);
-            curY += subLineH;
-            GUI.Label(new Rect(padX + 2f, curY, padW, subLineH),
-                "• <b>Bấm tháp đã xây</b>: Nâng Cấp Lên Cấp 2 & Cấp 3 (Tăng ST)", _subTextStyle);
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -548,17 +537,18 @@ namespace TowerDefense.UI
                 goldBorder, 1
             );
 
-            // 2. Kiểu chữ huy hiệu thông số HUD mở rộng phóng to
-            _chipTitleGoldStyle  = LabelStyle(_fontSmall, szSmall, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.95f, 0.78f, 0.30f));
-            _chipValGoldStyle    = LabelStyle(_fontHeader, Mathf.RoundToInt(24 * scale), FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.92f, 0.35f));
+            // 2. Kiểu chữ huy hiệu thông số HUD nhỏ gọn sắc nét
+            int szChipTitle = Mathf.RoundToInt(10 * scale);
+            _chipTitleGoldStyle  = LabelStyle(_fontSmall, szChipTitle, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.95f, 0.78f, 0.30f));
+            _chipValGoldStyle    = LabelStyle(_fontHeader, Mathf.RoundToInt(15 * scale), FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.92f, 0.35f));
 
-            _chipTitleHpStyle    = LabelStyle(_fontSmall, szSmall, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.65f, 0.65f));
-            _chipValHpStyle      = LabelStyle(_fontText, Mathf.RoundToInt(17 * scale), FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+            _chipTitleHpStyle    = LabelStyle(_fontSmall, szChipTitle, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.65f, 0.65f));
+            _chipValHpStyle      = LabelStyle(_fontText, Mathf.RoundToInt(13 * scale), FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
 
-            _chipTitleTowerStyle = LabelStyle(_fontSmall, szSmall, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.55f, 0.85f, 1f));
-            _chipValTowerStyle   = LabelStyle(_fontHeader, Mathf.RoundToInt(22 * scale), FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.65f, 0.95f, 1f));
+            _chipTitleTowerStyle = LabelStyle(_fontSmall, szChipTitle, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.55f, 0.85f, 1f));
+            _chipValTowerStyle   = LabelStyle(_fontHeader, Mathf.RoundToInt(15 * scale), FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.65f, 0.95f, 1f));
 
-            _waveTextStyle   = LabelStyle(_fontText, Mathf.RoundToInt(15 * scale), FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.96f, 0.82f));
+            _waveTextStyle   = LabelStyle(_fontText, Mathf.RoundToInt(11 * scale), FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.96f, 0.82f));
             _subTextStyle    = LabelStyle(_fontSmall, Mathf.RoundToInt(13 * scale), FontStyle.Normal, TextAnchor.UpperLeft, new Color(0.92f, 0.88f, 0.80f));
             _subTextStyle.richText = true;
 
