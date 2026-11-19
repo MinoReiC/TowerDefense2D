@@ -8,7 +8,9 @@ namespace TowerDefense.Enemies
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 2.5f;
         [SerializeField] private float rotationSpeed = 10f;
+#pragma warning disable 0414
         [SerializeField] private float reachThreshold = 0.1f;
+#pragma warning restore 0414
 
         [Header("Orientation")]
         [Tooltip("0 cho toàn bộ xe tăng & máy bay trong bộ Redesigned_Assets (mũi hướng sang phải +X)")]

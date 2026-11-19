@@ -169,7 +169,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7b36e1e7eb4e944fb1955ba0773a97b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDefense.Combat.Rocket
-  speed: 5.5
+  speed: 8.5
   damage: 47
   splashRadius: 1.6
   armorPenetration: 0.55

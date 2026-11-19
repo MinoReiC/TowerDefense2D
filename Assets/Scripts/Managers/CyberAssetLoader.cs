@@ -25,16 +25,28 @@ namespace TowerDefense.Managers
                 return cached;
             }
 
-            // 1. Tải Texture2D từ Resources/Redesigned/ để tạo Sprite chuẩn tâm (64, 64) trên khung 128x128
+            // 1. Tải Texture2D từ Resources/Redesigned/
             Texture2D tex = Resources.Load<Texture2D>("Redesigned/" + assetName);
             if (tex != null)
             {
                 tex.filterMode = FilterMode.Bilinear;
+
+                // Với bộ Pháo Đơn & Pháo Tên Lửa Kingdom Rush (2.5D Isometric kèm bệ đá), đặt tâm xoay (Pivot) ngay tại tâm của Bệ Đá (0.5f, 0.40f)
+                // để bệ đá nằm chính giữa tâm ô đất trên Map (không bị tụt xuống mép dưới ô đất)!
+                bool isKingdomRush25DTower = assetName.StartsWith("kr_cannon_lvl")
+                                          || assetName.StartsWith("kr_rocket_lvl")
+                                          || assetName.StartsWith("kr_laser_lvl")
+                                          || assetName == "kr_cannon_base";
+                Vector2 pivot = isKingdomRush25DTower ? new Vector2(0.5f, 0.40f) : new Vector2(0.5f, 0.5f);
+                float ppu = isKingdomRush25DTower
+                    ? 112f
+                    : (assetName.StartsWith("kr_enemy_") ? 105f : (assetName.StartsWith("kr_fx_explosion_") ? 110f : 100f));
+
                 Sprite created = Sprite.Create(
                     tex,
                     new Rect(0f, 0f, tex.width, tex.height),
-                    new Vector2(0.5f, 0.5f),
-                    100f
+                    pivot,
+                    ppu
                 );
                 created.name = assetName;
                 _spriteCache[assetName] = created;
@@ -56,7 +68,269 @@ namespace TowerDefense.Managers
         private static Sprite _emptySpotCenterSprite;
         private static Sprite _rangeCircleSprite;
         private static Sprite _laserBeamSprite;
+        private static Sprite[] _cannonLvl1DirSprites;
+        private static Sprite[] _cannonLvl1FireFrames;
+        private static Sprite[] _rocketLvl1DirSprites;
+        private static Sprite[] _rocketLvl1FireFrames;
+        private static Sprite[] _laserLvl1DirSprites;
+        private static Sprite[] _laserLvl1FireFrames;
+        private static Sprite[] _enemyTankLvl1Frames;
+        private static Sprite[] _enemyTankLvl2Frames;
+        private static Sprite[] _enemyTankLvl3Frames;
+        private static Sprite[] _enemyPlaneLvl1Frames;
+        private static Sprite[] _enemyPlaneLvl2Frames;
+        private static Sprite[] _enemyPlaneLvl3Frames;
+        private static Sprite[] _explosionFrames;
+        private static readonly Dictionary<string, Texture2D> _textureCache = new Dictionary<string, Texture2D>();
         private static readonly Dictionary<string, Sprite[]> _bulletFramesCache = new Dictionary<string, Sprite[]>();
+
+        private static readonly string[] CANNON_LVL1_DIR_NAMES = new string[8]
+        {
+            "kr_cannon_lvl1_dir0", // 0° Right
+            "kr_cannon_lvl1_dir1", // 45° Up-Right
+            "kr_cannon_lvl1_dir2", // 90° Up
+            "kr_cannon_lvl1_dir3", // 135° Up-Left
+            "kr_cannon_lvl1_dir4", // 180° Left
+            "kr_cannon_lvl1_dir5", // 225° Down-Left
+            "kr_cannon_lvl1_dir6", // 270° Down
+            "kr_cannon_lvl1_dir7"  // 315° Down-Right
+        };
+
+        private static readonly string[] CANNON_LVL1_FIRE_NAMES = new string[4]
+        {
+            "kr_cannon_lvl1_fire_f1", // Frame 1: Idle
+            "kr_cannon_lvl1_fire_f2", // Frame 2: Anticipation (Fuse spark)
+            "kr_cannon_lvl1_fire_f3", // Frame 3: Recoil Kick / Squash!
+            "kr_cannon_lvl1_fire_f4"  // Frame 4: Stretch & Settle
+        };
+
+        private static readonly string[] ROCKET_LVL1_DIR_NAMES = new string[8]
+        {
+            "kr_rocket_lvl1_dir0", // 0° Right
+            "kr_rocket_lvl1_dir1", // 45° Up-Right
+            "kr_rocket_lvl1_dir2", // 90° Up
+            "kr_rocket_lvl1_dir3", // 135° Up-Left
+            "kr_rocket_lvl1_dir4", // 180° Left
+            "kr_rocket_lvl1_dir5", // 225° Down-Left
+            "kr_rocket_lvl1_dir6", // 270° Down
+            "kr_rocket_lvl1_dir7"  // 315° Down-Right
+        };
+
+        private static readonly string[] ROCKET_LVL1_FIRE_NAMES = new string[4]
+        {
+            "kr_rocket_lvl1_fire_f1", // Frame 1: Idle (4 warheads loaded)
+            "kr_rocket_lvl1_fire_f2", // Frame 2: Ignition (Backblast spark)
+            "kr_rocket_lvl1_fire_f3", // Frame 3: Launch Kick / Squash!
+            "kr_rocket_lvl1_fire_f4"  // Frame 4: Stretch & Settle (Tube smoke puff)
+        };
+
+        private static readonly string[] LASER_LVL1_DIR_NAMES = new string[8]
+        {
+            "kr_laser_lvl1_dir0", // 0° Right
+            "kr_laser_lvl1_dir1", // 45° Up-Right
+            "kr_laser_lvl1_dir2", // 90° Up
+            "kr_laser_lvl1_dir3", // 135° Up-Left
+            "kr_laser_lvl1_dir4", // 180° Left
+            "kr_laser_lvl1_dir5", // 225° Down-Left
+            "kr_laser_lvl1_dir6", // 270° Down
+            "kr_laser_lvl1_dir7"  // 315° Down-Right
+        };
+
+        private static readonly string[] LASER_LVL1_FIRE_NAMES = new string[4]
+        {
+            "kr_laser_lvl1_fire_f1", // Frame 1: Idle (cyan orb charged)
+            "kr_laser_lvl1_fire_f2", // Frame 2: Flare pulse
+            "kr_laser_lvl1_fire_f3", // Frame 3: Zap Blast / Electric arc
+            "kr_laser_lvl1_fire_f4"  // Frame 4: Stretch & Cooldown
+        };
+
+        private static readonly string[] ENEMY_TANK_LVL1_NAMES = { "kr_enemy_tank_lvl1_f1", "kr_enemy_tank_lvl1_f2", "kr_enemy_tank_lvl1_f3", "kr_enemy_tank_lvl1_f4" };
+        private static readonly string[] ENEMY_TANK_LVL2_NAMES = { "kr_enemy_tank_lvl2_f1", "kr_enemy_tank_lvl2_f2", "kr_enemy_tank_lvl2_f3", "kr_enemy_tank_lvl2_f4" };
+        private static readonly string[] ENEMY_TANK_LVL3_NAMES = { "kr_enemy_tank_lvl3_f1", "kr_enemy_tank_lvl3_f2", "kr_enemy_tank_lvl3_f3", "kr_enemy_tank_lvl3_f4" };
+        private static readonly string[] ENEMY_PLANE_LVL1_NAMES = { "kr_enemy_plane_lvl1_f1", "kr_enemy_plane_lvl1_f2", "kr_enemy_plane_lvl1_f3", "kr_enemy_plane_lvl1_f4" };
+        private static readonly string[] ENEMY_PLANE_LVL2_NAMES = { "kr_enemy_plane_lvl2_f1", "kr_enemy_plane_lvl2_f2", "kr_enemy_plane_lvl2_f3", "kr_enemy_plane_lvl2_f4" };
+        private static readonly string[] ENEMY_PLANE_LVL3_NAMES = { "kr_enemy_plane_lvl3_f1", "kr_enemy_plane_lvl3_f2", "kr_enemy_plane_lvl3_f3", "kr_enemy_plane_lvl3_f4" };
+        private static readonly string[] FX_EXPLOSION_NAMES = { "kr_fx_explosion_f1", "kr_fx_explosion_f2", "kr_fx_explosion_f3", "kr_fx_explosion_f4" };
+
+        private static Sprite[] GetOrLoadFrameSequence(ref Sprite[] cache, string[] assetNames)
+        {
+            if (cache != null && cache.Length == assetNames.Length && cache[0] != null)
+            {
+                return cache;
+            }
+            cache = new Sprite[assetNames.Length];
+            for (int i = 0; i < assetNames.Length; i++)
+            {
+                cache[i] = GetSprite(assetNames[i]);
+            }
+            return cache;
+        }
+
+        public static Sprite[] GetEnemyTankLvl1Frames()  => GetOrLoadFrameSequence(ref _enemyTankLvl1Frames,  ENEMY_TANK_LVL1_NAMES);
+        public static Sprite[] GetEnemyTankLvl2Frames()  => GetOrLoadFrameSequence(ref _enemyTankLvl2Frames,  ENEMY_TANK_LVL2_NAMES);
+        public static Sprite[] GetEnemyTankLvl3Frames()  => GetOrLoadFrameSequence(ref _enemyTankLvl3Frames,  ENEMY_TANK_LVL3_NAMES);
+        public static Sprite[] GetEnemyPlaneLvl1Frames() => GetOrLoadFrameSequence(ref _enemyPlaneLvl1Frames, ENEMY_PLANE_LVL1_NAMES);
+        public static Sprite[] GetEnemyPlaneLvl2Frames() => GetOrLoadFrameSequence(ref _enemyPlaneLvl2Frames, ENEMY_PLANE_LVL2_NAMES);
+        public static Sprite[] GetEnemyPlaneLvl3Frames() => GetOrLoadFrameSequence(ref _enemyPlaneLvl3Frames, ENEMY_PLANE_LVL3_NAMES);
+        public static Sprite[] GetExplosionFrames()      => GetOrLoadFrameSequence(ref _explosionFrames,      FX_EXPLOSION_NAMES);
+
+        /// <summary>
+        /// Lấy bộ 8 Sprite góc xoay (0°..315°) của Pháo Đơn Cấp 1 phong cách Kingdom Rush (Zero-GC trong runtime).
+        /// </summary>
+        public static Sprite[] GetCannonLvl1DirSprites()
+        {
+            if (_cannonLvl1DirSprites != null && _cannonLvl1DirSprites.Length == 8 && _cannonLvl1DirSprites[0] != null)
+            {
+                return _cannonLvl1DirSprites;
+            }
+
+            _cannonLvl1DirSprites = new Sprite[8];
+            for (int i = 0; i < 8; i++)
+            {
+                _cannonLvl1DirSprites[i] = GetSprite(CANNON_LVL1_DIR_NAMES[i]);
+            }
+            return _cannonLvl1DirSprites;
+        }
+
+        /// <summary>
+        /// Lấy bộ 4 Frame Animation khi Pháo Đơn Cấp 1 khai hỏa (Idle -> Anticipation -> Squash -> Stretch & Settle).
+        /// </summary>
+        public static Sprite[] GetCannonLvl1FireFrames()
+        {
+            if (_cannonLvl1FireFrames != null && _cannonLvl1FireFrames.Length == 4 && _cannonLvl1FireFrames[0] != null)
+            {
+                return _cannonLvl1FireFrames;
+            }
+
+            _cannonLvl1FireFrames = new Sprite[4];
+            for (int i = 0; i < 4; i++)
+            {
+                _cannonLvl1FireFrames[i] = GetSprite(CANNON_LVL1_FIRE_NAMES[i]);
+            }
+            return _cannonLvl1FireFrames;
+        }
+
+        /// <summary>
+        /// Lấy bộ 8 Sprite góc xoay (0°..315°) của Pháo Tên Lửa Cấp 1 phong cách Kingdom Rush (Zero-GC trong runtime).
+        /// </summary>
+        public static Sprite[] GetRocketLvl1DirSprites()
+        {
+            if (_rocketLvl1DirSprites != null && _rocketLvl1DirSprites.Length == 8 && _rocketLvl1DirSprites[0] != null)
+            {
+                return _rocketLvl1DirSprites;
+            }
+
+            _rocketLvl1DirSprites = new Sprite[8];
+            for (int i = 0; i < 8; i++)
+            {
+                _rocketLvl1DirSprites[i] = GetSprite(ROCKET_LVL1_DIR_NAMES[i]);
+            }
+            return _rocketLvl1DirSprites;
+        }
+
+        /// <summary>
+        /// Lấy bộ 4 Frame Animation khi Pháo Tên Lửa Cấp 1 khai hỏa (Idle -> Ignition -> Launch Kick/Squash -> Stretch & Settle).
+        /// </summary>
+        public static Sprite[] GetRocketLvl1FireFrames()
+        {
+            if (_rocketLvl1FireFrames != null && _rocketLvl1FireFrames.Length == 4 && _rocketLvl1FireFrames[0] != null)
+            {
+                return _rocketLvl1FireFrames;
+            }
+
+            _rocketLvl1FireFrames = new Sprite[4];
+            for (int i = 0; i < 4; i++)
+            {
+                _rocketLvl1FireFrames[i] = GetSprite(ROCKET_LVL1_FIRE_NAMES[i]);
+            }
+            return _rocketLvl1FireFrames;
+        }
+
+        /// <summary>
+        /// Lấy bộ 8 Sprite góc chiếu Laze (0°..315°) của Tháp Laze Cấp 1 phong cách Kingdom Rush (Zero-GC).
+        /// </summary>
+        public static Sprite[] GetLaserLvl1DirSprites()
+        {
+            if (_laserLvl1DirSprites != null && _laserLvl1DirSprites.Length == 8 && _laserLvl1DirSprites[0] != null)
+            {
+                return _laserLvl1DirSprites;
+            }
+
+            _laserLvl1DirSprites = new Sprite[8];
+            for (int i = 0; i < 8; i++)
+            {
+                _laserLvl1DirSprites[i] = GetSprite(LASER_LVL1_DIR_NAMES[i]);
+            }
+            return _laserLvl1DirSprites;
+        }
+
+        /// <summary>
+        /// Lấy bộ 4 Frame Animation xung năng lượng khi Tháp Laze Cấp 1 bắn tia (Idle -> Flare -> Zap Blast -> Stretch & Cooldown).
+        /// </summary>
+        public static Sprite[] GetLaserLvl1FireFrames()
+        {
+            if (_laserLvl1FireFrames != null && _laserLvl1FireFrames.Length == 4 && _laserLvl1FireFrames[0] != null)
+            {
+                return _laserLvl1FireFrames;
+            }
+
+            _laserLvl1FireFrames = new Sprite[4];
+            for (int i = 0; i < 4; i++)
+            {
+                _laserLvl1FireFrames[i] = GetSprite(LASER_LVL1_FIRE_NAMES[i]);
+            }
+            return _laserLvl1FireFrames;
+        }
+
+        /// <summary>
+        /// Lấy Sprite Tia Laze năng lượng theo Cấp độ (Level 1: Cyan, Level 2: Dual-core Tím/Lam, Level 3: Prismatic Vàng/Lam).
+        /// </summary>
+        public static Sprite GetLaserBeamSprite(int level = 1)
+        {
+            string beamName = (level == 3) ? "kr_laser_beam_lvl3" : ((level == 2) ? "kr_laser_beam_lvl2" : "kr_laser_beam_lvl1");
+            return GetSprite(beamName);
+        }
+
+        /// <summary>
+        /// Lấy Sprite Quả Cầu Năng Lượng Đỉnh Tháp theo Cấp độ (Level 1: Ngọc Lam, Level 2: Sấm Lam, Level 3: Prismatic Hào Quang).
+        /// </summary>
+        public static Sprite GetLaserOrbSprite(int level = 1)
+        {
+            string orbName = (level == 3) ? "kr_laser_orb_lvl3" : ((level == 2) ? "kr_laser_orb_lvl2" : "kr_laser_orb_lvl1");
+            return GetSprite(orbName);
+        }
+
+        /// <summary>
+        /// Tải và lưu đệm (Cache) Texture2D từ Resources/Redesigned/ phục vụ Radial Build Menu UI (Zero-GC trong runtime).
+        /// </summary>
+        public static Texture2D GetTexture(string assetName)
+        {
+            if (string.IsNullOrEmpty(assetName)) return null;
+            if (assetName.EndsWith(".png"))
+                assetName = assetName.Substring(0, assetName.Length - 4);
+
+            if (_textureCache.TryGetValue(assetName, out Texture2D cached) && cached != null)
+            {
+                return cached;
+            }
+
+            Texture2D tex = Resources.Load<Texture2D>("Redesigned/" + assetName);
+            if (tex != null)
+            {
+                tex.filterMode = FilterMode.Bilinear;
+                _textureCache[assetName] = tex;
+                return tex;
+            }
+
+            Sprite spr = Resources.Load<Sprite>("Redesigned/" + assetName);
+            if (spr != null && spr.texture != null)
+            {
+                _textureCache[assetName] = spr.texture;
+                return spr.texture;
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Lấy chuỗi 4 frame cho từng loại đạn theo animation đường đạn (xoay hồ quang / lưỡi từ tính).

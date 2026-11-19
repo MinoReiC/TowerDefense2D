@@ -22,6 +22,12 @@ namespace TowerDefense.Enemies
         [SerializeField] private GameObject explosionPrefab;
 
         private float currentHealth;
+        private SpriteRenderer _spriteRenderer;
+        private Sprite[] _animFrames;
+        private float _animTimer;
+        private int _animIndex;
+        private float _animFps = 10f;
+
         public bool IsDead { get; private set; }
         public string EnemyName => enemyName;
         public float MaxHealth => maxHealth;
@@ -47,7 +53,13 @@ namespace TowerDefense.Enemies
         private void ApplyKingdomRushArchetypeStats()
         {
             string id = (gameObject.name + " " + enemyName).ToLowerInvariant();
-            SpriteRenderer sr = GetComponent<SpriteRenderer>();
+            _spriteRenderer = GetComponent<SpriteRenderer>();
+            if (_spriteRenderer != null) _spriteRenderer.color = Color.white;
+
+            // Ẩn nòng pháo tách rời cũ (nếu prefab có sẵn) vì bộ xe tăng vẽ tay mới đã tích hợp tháp pháo đồng bộ
+            Transform oldGun = transform.Find("TankGun");
+            if (oldGun != null) oldGun.gameObject.SetActive(false);
+
             EnemyMovement mov = GetComponent<EnemyMovement>();
             if (mov != null) mov.SetAngleOffset(0f); // Toàn bộ xe tăng & máy bay mới đều hướng mũi sang phải (+X)
 
@@ -59,11 +71,8 @@ namespace TowerDefense.Enemies
                 armor      = 0.00f; // 0% Giáp
                 goldReward = 8;
                 baseDamage = 1;
-                if (sr != null)
-                {
-                    Sprite s = CyberAssetLoader.GetSprite("towerDefense_tile270");
-                    if (s != null) sr.sprite = s;
-                }
+                _animFrames = CyberAssetLoader.GetEnemyPlaneLvl1Frames();
+                _animFps = 14f;
             }
             else if (id.Contains("boss") || id.Contains("siêu"))
             {
@@ -73,12 +82,8 @@ namespace TowerDefense.Enemies
                 armor      = 0.35f; // 35% Giáp
                 goldReward = 75;
                 baseDamage = 5;
-                if (sr != null)
-                {
-                    Sprite s = CyberAssetLoader.GetSprite("towerDefense_tile269");
-                    if (s != null) sr.sprite = s;
-                    AttachTankTurretSprite("towerDefense_tile292", sr.color, sr.sortingOrder + 1);
-                }
+                _animFrames = CyberAssetLoader.GetEnemyTankLvl3Frames();
+                _animFps = 9f;
             }
             else if (id.Contains("heavy") || id.Contains("hạng nặng"))
             {
@@ -88,12 +93,8 @@ namespace TowerDefense.Enemies
                 armor      = 0.45f; // 45% Giáp vật lý
                 goldReward = 28;
                 baseDamage = 3;
-                if (sr != null)
-                {
-                    Sprite s = CyberAssetLoader.GetSprite("towerDefense_tile269");
-                    if (s != null) sr.sprite = s;
-                    AttachTankTurretSprite("towerDefense_tile292", Color.white, sr.sortingOrder + 1);
-                }
+                _animFrames = CyberAssetLoader.GetEnemyTankLvl2Frames();
+                _animFps = 9f;
             }
             else if (id.Contains("armored") || id.Contains("bọc thép") || id.Contains("lớn") || id.Contains("stealth"))
             {
@@ -103,13 +104,11 @@ namespace TowerDefense.Enemies
                 armor      = 0.25f; // 25% Giáp
                 goldReward = 18;
                 baseDamage = 2;
-                if (sr != null)
-                {
-                    // Xen kẽ Chiến Cơ Tàng Hình (plane_stealth_lvl2) và Phản Lực Bọc Thép (tile271)
-                    string planeSprite = (UnityEngine.Random.value < 0.5f) ? "plane_stealth_lvl2" : "towerDefense_tile271";
-                    Sprite s = CyberAssetLoader.GetSprite(planeSprite);
-                    if (s != null) sr.sprite = s;
-                }
+                // Xen kẽ Máy Bay Phản Lực Bọc Thép (Cấp 2) và Chiến Cơ Tàng Hình Cánh Dơi (Cấp 3)
+                _animFrames = (UnityEngine.Random.value < 0.5f)
+                    ? CyberAssetLoader.GetEnemyPlaneLvl2Frames()
+                    : CyberAssetLoader.GetEnemyPlaneLvl3Frames();
+                _animFps = 14f;
             }
             else
             {
@@ -119,34 +118,38 @@ namespace TowerDefense.Enemies
                 armor      = 0.15f; // 15% Giáp
                 goldReward = 12;
                 baseDamage = 1;
-                if (sr != null)
+                _animFrames = CyberAssetLoader.GetEnemyTankLvl1Frames();
+                _animFps = 10f;
+            }
+
+            if (_spriteRenderer != null && _animFrames != null && _animFrames.Length > 0)
+            {
+                _animIndex = UnityEngine.Random.Range(0, _animFrames.Length);
+                _animTimer = UnityEngine.Random.Range(0f, 0.1f);
+                if (_animFrames[_animIndex] != null)
                 {
-                    Sprite s = CyberAssetLoader.GetSprite("towerDefense_tile268");
-                    if (s != null) sr.sprite = s;
-                    AttachTankTurretSprite("towerDefense_tile291", Color.white, sr.sortingOrder + 1);
+                    _spriteRenderer.sprite = _animFrames[_animIndex];
                 }
             }
         }
 
-        private void AttachTankTurretSprite(string turretSpriteName, Color tint, int sortingOrder)
+        private void Update()
         {
-            Sprite turretSprite = CyberAssetLoader.GetSprite(turretSpriteName);
-            if (turretSprite == null) return;
+            if (IsDead || _spriteRenderer == null || _animFrames == null || _animFrames.Length <= 1 || _animFps <= 0f)
+                return;
 
-            Transform existing = transform.Find("TankGun");
-            GameObject gunGO = existing != null ? existing.gameObject : new GameObject("TankGun");
-            if (existing == null)
+            _animTimer += Time.deltaTime;
+            float interval = 1f / _animFps;
+            if (_animTimer >= interval)
             {
-                gunGO.transform.SetParent(transform, false);
-                gunGO.transform.localPosition = Vector3.zero;
-                gunGO.transform.localRotation = Quaternion.identity;
-                gunGO.transform.localScale = Vector3.one;
+                _animTimer -= interval;
+                _animIndex = (_animIndex + 1) % _animFrames.Length;
+                Sprite frame = _animFrames[_animIndex];
+                if (frame != null)
+                {
+                    _spriteRenderer.sprite = frame;
+                }
             }
-            SpriteRenderer gunSr = gunGO.GetComponent<SpriteRenderer>();
-            if (gunSr == null) gunSr = gunGO.AddComponent<SpriteRenderer>();
-            gunSr.sprite = turretSprite;
-            gunSr.color = tint;
-            gunSr.sortingOrder = sortingOrder;
         }
 
         /// <summary>

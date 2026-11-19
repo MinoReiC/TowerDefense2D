@@ -24,7 +24,9 @@ namespace TowerDefense.Managers
         [SerializeField] private WaypointPath waypointPath;
 
         [Header("Timing")]
+#pragma warning disable 0414
         [SerializeField] private float timeBetweenWaves = 4f;
+#pragma warning restore 0414
         [SerializeField] private float defaultSpawnInterval = 1.1f;
 
         private int waveNumber = 0;

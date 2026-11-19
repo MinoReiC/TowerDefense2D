@@ -38,18 +38,57 @@ namespace TowerDefense.Towers
         [SerializeField] private Color menuOpenColor     = new Color(1f, 0.85f, 0.1f, 1f);
 
         // State
-        private bool isBuilt          = false;
-        private bool isMenuOpen       = false;
+        private bool isBuilt           = false;
+        private bool isMenuOpen        = false;
         private bool isUpgradeMenuOpen = false;
-        private Tower currentTower    = null;
+        private Tower currentTower     = null;
 
         private Camera mainCamera;
         private Vector3 initialScale;
 
+        // ── Tap Squash-and-Stretch & Radial Menu Spring Pop State (Zero-GC)
+        private bool  _isTapAnimating    = false;
+        private float _tapAnimElapsed    = 0f;
+        private const float TAP_DURATION = 0.24f;
+        private float _radialOpenElapsed = 0f;
+        private const float RADIAL_POP_DURATION = 0.22f;
+
+        // ── Range Preview Ring khi Hover nút trong Vòng Tròn Đặt Trụ
+        private SpriteRenderer _previewRangeRenderer;
+
+        // ── Zero-GC Cached Price Strings & Textures cho Radial Menu Kingdom Rush
+        private const string STR_PRICE_CANNON = "70";
+        private const string STR_PRICE_ROCKET = "100";
+        private const string STR_PRICE_LASER  = "150";
+        private const string STR_TOOLTIP_CANNON = "PHÁO ĐƠN  •  ST: 16-24 (Bắn nhanh)";
+        private const string STR_TOOLTIP_ROCKET = "PHÁO TÊN LỬA  •  ST: 38-56 (Nổ AoE)";
+        private const string STR_TOOLTIP_LASER  = "PHÁO LASER  •  ST: 85-125 (Xuyên giáp)";
+
+        private static Texture2D _texRadialRing;
+        private static Texture2D _texBtnCannon;
+        private static Texture2D _texBtnRocket;
+        private static Texture2D _texBtnLaser;
+        private static Texture2D _texBtnUpgrade;
+        private static Texture2D _texBtnMax;
+        private static Texture2D _texBtnSell;
+        private static Texture2D _texBtnConfirmSell;
+        private static Texture2D _texPriceBadge;
+        private static Texture2D _texBtnCancel;
+        private static GUIStyle  _priceLabelStyle;
+        private static GUIStyle  _priceUnaffordableStyle;
+        private static GUIStyle  _radialTooltipStyle;
+
+        // ── Zero-GC String Caches cho Menu Nâng Cấp & Bán Pháo
+        private const string STR_MAX_LEVEL = "MAX";
+        private static readonly System.Collections.Generic.Dictionary<int, string> _cachedCostStrings   = new System.Collections.Generic.Dictionary<int, string>(16);
+        private static readonly System.Collections.Generic.Dictionary<int, string> _cachedRefundStrings = new System.Collections.Generic.Dictionary<int, string>(16);
+        private static readonly System.Collections.Generic.Dictionary<int, string> _cachedHeaderStrings = new System.Collections.Generic.Dictionary<int, string>(16);
+        private bool _isConfirmingSell = false;
+
         // GUI popup rect
         private Rect popupRect;
-        private const float BUILD_POPUP_W = 390f;
-        private const float BUILD_POPUP_H = 258f;
+        private const float BUILD_POPUP_W   = 320f;
+        private const float BUILD_POPUP_H   = 320f;
         private const float UPGRADE_POPUP_W = 400f;
         private const float UPGRADE_POPUP_H = 240f;
 
@@ -87,26 +126,78 @@ namespace TowerDefense.Towers
                 if (ind != null) indicatorRenderer = ind.GetComponent<SpriteRenderer>();
             }
 
-            // Ô chờ xây tháp: CHƯA hiện đế trụ cố định, chỉ hiện vòng định vị Hologram & dấu (+) nhấp nháy.
-            // Sau khi mua trụ pháo xong thì Đế Trụ (tile180..183) mới xuất hiện kèm theo Pháo!
+            // Ô chờ xây tháp: Sử dụng trực tiếp hình ảnh Ô Đất Cát + Biển Búa Gỗ trên nền Map Kingdom Rush,
+            // chỉ bật vòng sáng vàng ấm khi người chơi di chuột (Hover) vào ô đất!
             if (baseRenderer != null)
             {
                 Sprite emptyRing = CyberAssetLoader.GetEmptyBuildSpotRingSprite();
                 if (emptyRing != null) baseRenderer.sprite = emptyRing;
-                baseRenderer.color = normalColor;
-                baseRenderer.enabled = !HasTower;
+                baseRenderer.color = new Color(1f, 0.90f, 0.35f, 0.85f);
+                baseRenderer.enabled = false;
             }
             if (indicatorRenderer != null)
             {
-                Sprite emptyPlus = CyberAssetLoader.GetEmptyBuildSpotPlusSprite();
-                if (emptyPlus != null) indicatorRenderer.sprite = emptyPlus;
-                indicatorRenderer.transform.localScale = Vector3.one * 0.75f;
-                indicatorRenderer.enabled = !HasTower;
+                indicatorRenderer.enabled = false;
+            }
+
+            // Tạo sẵn Range Preview Renderer cho ô đất (Zero-GC trong runtime khi hover nút Radial Menu)
+            Transform previewTr = transform.Find("PreviewRange");
+            if (previewTr != null)
+            {
+                _previewRangeRenderer = previewTr.GetComponent<SpriteRenderer>();
+            }
+            else
+            {
+                GameObject pGO = new GameObject("PreviewRange");
+                pGO.transform.SetParent(transform, false);
+                pGO.transform.localPosition = Vector3.zero;
+                _previewRangeRenderer = pGO.AddComponent<SpriteRenderer>();
+            }
+            if (_previewRangeRenderer != null)
+            {
+                _previewRangeRenderer.sprite = CyberAssetLoader.GetRangeCircleSprite();
+                _previewRangeRenderer.sortingOrder = 1;
+                _previewRangeRenderer.enabled = false;
             }
         }
 
         private void Update()
         {
+            // Animation nhấp vào ô đất trống (Squash-and-Stretch Zero-GC)
+            if (_isTapAnimating)
+            {
+                _tapAnimElapsed += Time.unscaledDeltaTime;
+                if (_tapAnimElapsed >= TAP_DURATION)
+                {
+                    _isTapAnimating = false;
+                    transform.localScale = initialScale;
+                }
+                else
+                {
+                    float t = _tapAnimElapsed / TAP_DURATION;
+                    float sx, sy;
+                    if (t < 0.35f)
+                    {
+                        float p = t / 0.35f;
+                        sx = Mathf.Lerp(1f, 1.25f, p);
+                        sy = Mathf.Lerp(1f, 0.76f, p);
+                    }
+                    else if (t < 0.72f)
+                    {
+                        float p = (t - 0.35f) / 0.37f;
+                        sx = Mathf.Lerp(1.25f, 0.90f, p);
+                        sy = Mathf.Lerp(0.76f, 1.16f, p);
+                    }
+                    else
+                    {
+                        float p = (t - 0.72f) / 0.28f;
+                        sx = Mathf.Lerp(0.90f, 1f, p);
+                        sy = Mathf.Lerp(1.16f, 1f, p);
+                    }
+                    transform.localScale = new Vector3(initialScale.x * sx, initialScale.y * sy, initialScale.z);
+                }
+            }
+
             Vector2 mouseWorld = GetMouseWorldPosition();
             float dist = Vector2.Distance(mouseWorld, transform.position);
             bool isHovered = (dist <= clickRadius);
@@ -115,9 +206,14 @@ namespace TowerDefense.Towers
             float pulse = 1f + Mathf.Sin(Time.time * 4.5f) * 0.08f;
             float blink = 0.5f + 0.5f * Mathf.Sin(Time.time * 5.0f);
 
-            // 1. Khi đang mở menu (menu Xây hoặc menu Nâng cấp)
+            // 1. Khi đang mở menu (menu Xây vòng tròn Radial hoặc menu Nâng cấp & Bán vòng tròn Radial)
             if (isMenuOpen || isUpgradeMenuOpen)
             {
+                if (_radialOpenElapsed < RADIAL_POP_DURATION)
+                {
+                    _radialOpenElapsed += Time.unscaledDeltaTime;
+                }
+
                 if (WasLeftMouseClicked())
                 {
                     Vector2 screenPos = GetMouseScreenPosition();
@@ -139,56 +235,68 @@ namespace TowerDefense.Towers
             // 2. Khi ô ĐÃ CÓ THÁP: ẩn vòng chờ xây vì bản thân Tháp đã hiển thị Đế Trụ + Ụ Pháo đi kèm!
             if (HasTower)
             {
-                transform.localScale = initialScale;
+                if (!_isTapAnimating) transform.localScale = initialScale;
                 if (baseRenderer != null) baseRenderer.enabled = false;
                 if (indicatorRenderer != null) indicatorRenderer.enabled = false;
                 if (isHovered && WasLeftMouseClicked())
                 {
+                    TriggerTapBounce();
                     OpenUpgradeMenu();
                 }
                 return;
             }
 
-            // 3. Khi ô CHƯA CÓ THÁP: hiển thị vòng định vị nhấp nháy chờ xây tháp & hover mời bấm MUA THÁP
-            if (baseRenderer != null) baseRenderer.enabled = true;
+            // 3. Khi ô CHƯA CÓ THÁP: đồng bộ với nền Map vẽ tay (ô đất + biển búa gỗ trên Map).
+            // Khi bình thường ẩn vòng hologram để không đè lên ô đất vẽ tay; khi Hover mới hiện vòng sáng vàng ấm mời bấm xây trụ!
+            if (indicatorRenderer != null) indicatorRenderer.enabled = false;
             if (isHovered)
             {
-                transform.localScale = initialScale * (pulse * 1.15f);
+                if (!_isTapAnimating)
+                    transform.localScale = initialScale * (pulse * 1.10f);
 
                 bool canAfford = GameManager.Instance != null && GameManager.Instance.CanAfford(cannonCost);
-                Color targetColor = canAfford ? hoverAffordableColor : hoverUnaffordableColor;
+                Color targetColor = canAfford
+                    ? new Color(1f, 0.90f, 0.35f, 0.85f)
+                    : new Color(1f, 0.35f, 0.30f, 0.85f);
 
-                if (baseRenderer != null) baseRenderer.color = targetColor;
-                if (indicatorRenderer != null)
+                if (baseRenderer != null)
                 {
-                    indicatorRenderer.enabled = true;
-                    indicatorRenderer.color = targetColor;
-                    indicatorRenderer.transform.localScale = Vector3.one * 0.88f;
+                    baseRenderer.enabled = true;
+                    baseRenderer.color = targetColor;
                 }
 
                 if (WasLeftMouseClicked())
                 {
+                    TriggerTapBounce();
                     OpenBuildMenu();
                 }
             }
             else
             {
-                transform.localScale = initialScale * pulse;
+                if (!_isTapAnimating)
+                    transform.localScale = initialScale;
                 if (baseRenderer != null)
                 {
-                    baseRenderer.color = Color.Lerp(normalColor, new Color(0.60f, 1f, 0.75f, 0.95f), blink * 0.45f);
+                    baseRenderer.enabled = false;
                 }
-                if (indicatorRenderer != null)
-                {
-                    indicatorRenderer.enabled = true;
-                    indicatorRenderer.color = new Color(
-                        Mathf.Lerp(0.55f, 1f, blink),
-                        1f,
-                        Mathf.Lerp(0.55f, 0.85f, blink),
-                        Mathf.Lerp(0.35f, 0.95f, blink)
-                    );
-                    indicatorRenderer.transform.localScale = Vector3.one * Mathf.Lerp(0.65f, 0.82f, blink);
-                }
+            }
+        }
+
+        private void TriggerTapBounce()
+        {
+            _isTapAnimating = true;
+            _tapAnimElapsed = 0f;
+        }
+
+        private void SetPreviewRange(bool visible, float range = 3.6f)
+        {
+            if (_previewRangeRenderer == null) return;
+            if (_previewRangeRenderer.enabled != visible)
+                _previewRangeRenderer.enabled = visible;
+            if (visible)
+            {
+                float diameter = range * 2f;
+                _previewRangeRenderer.transform.localScale = new Vector3(diameter, diameter, 1f);
             }
         }
 
@@ -196,6 +304,8 @@ namespace TowerDefense.Towers
         {
             isMenuOpen = false;
             isUpgradeMenuOpen = false;
+            _isConfirmingSell = false;
+            SetPreviewRange(false);
             if (currentTower != null)
             {
                 currentTower.SetRangeVisible(false);
@@ -203,33 +313,56 @@ namespace TowerDefense.Towers
             ResetVisual();
         }
 
-        // ─── Mở popup chọn loại pháo ───────────────────────────────────────
+        // ─── Mở Vòng Tròn Chọn Loại Pháo (Kingdom Rush Radial Build Menu) ────
         private void OpenBuildMenu()
         {
             if (HasTower) return;
             isUpgradeMenuOpen = false;
+            _radialOpenElapsed = 0f;
 
-            CalculatePopupRect(BUILD_POPUP_W, BUILD_POPUP_H);
+            CalculateRadialPopupRect();
             isMenuOpen = true;
         }
 
-        // ─── Mở popup nâng cấp tháp & hiện vòng tầm đánh ──────────────────
+        private void CalculateRadialPopupRect()
+        {
+            float uiScale = Mathf.Clamp(Screen.height / 1080f, 0.85f, 1.85f);
+            float scaledW = BUILD_POPUP_W * uiScale;
+            float scaledH = BUILD_POPUP_H * uiScale;
+
+            if (mainCamera == null) mainCamera = Camera.main;
+            Vector3 screenPt = mainCamera != null
+                ? mainCamera.WorldToScreenPoint(transform.position)
+                : new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f);
+
+            float centerGuiX = screenPt.x;
+            float centerGuiY = Screen.height - screenPt.y;
+
+            float guiX = Mathf.Clamp(centerGuiX - scaledW * 0.5f, 12f, Screen.width  - scaledW - 12f);
+            float guiY = Mathf.Clamp(centerGuiY - scaledH * 0.5f, 12f, Screen.height - scaledH - 12f);
+
+            popupRect = new Rect(guiX, guiY, scaledW, scaledH);
+        }
+
+        // ─── Mở Vòng Tròn Nâng Cấp & Bán Pháo (Kingdom Rush Radial Action Menu) ──
         private void OpenUpgradeMenu()
         {
             if (!HasTower || currentTower == null) return;
             isMenuOpen = false;
+            _isConfirmingSell = false;
+            _radialOpenElapsed = 0f;
 
             // Đóng tầm đánh của các tháp khác (nếu có)
-            Tower[] allTowers = Object.FindObjectsByType<Tower>(FindObjectsSortMode.None);
+            Tower[] allTowers = Object.FindObjectsByType<Tower>(FindObjectsInactive.Exclude);
             foreach (var t in allTowers)
             {
                 if (t != null && t != currentTower) t.SetRangeVisible(false);
             }
 
-            // Hiện vòng tầm đánh của pháo này
+            // Hiện vòng tầm đánh hiện tại của pháo này
             currentTower.SetRangeVisible(true);
 
-            CalculatePopupRect(UPGRADE_POPUP_W, UPGRADE_POPUP_H);
+            CalculateRadialPopupRect();
             isUpgradeMenuOpen = true;
         }
 
@@ -269,126 +402,437 @@ namespace TowerDefense.Towers
             }
         }
 
-        // Popup Xây Tháp Mới (3 Loại Pháo: Pháo Đơn 70, Tên Lửa 100, Tháp Laser Tím 150)
+        // ─── Vẽ Vòng Tròn Đặt Trụ Kingdom Rush (3 Nút Tròn: Pháo Đơn 70, Tên Lửa 100, Laser 150 + Nút Đóng X)
         private void DrawBuildPopup()
         {
             float uiScale = Mathf.Clamp(Screen.height / 1080f, 0.85f, 1.85f);
-            GUI.Box(popupRect, "", _boxStyle);
+            CalculateRadialPopupRect();
 
-            float innerX = popupRect.x + 16f * uiScale;
-            float innerY = popupRect.y + 14f * uiScale;
-            float btnW   = popupRect.width - 32f * uiScale;
-            float btnH   = 46f * uiScale;
+            // Spring Pop Scale (EaseOutBack từ 0 -> 1 trong 0.22s, không Dust Puff, không sao xoay)
+            float t = Mathf.Clamp01(_radialOpenElapsed / RADIAL_POP_DURATION);
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1f;
+            float tm1 = t - 1f;
+            float popScale = Mathf.Max(0.05f, 1f + c3 * tm1 * tm1 * tm1 + c1 * tm1 * tm1);
 
-            GUI.Label(new Rect(innerX, innerY, btnW, 30f * uiScale), "CHỌN LOẠI PHÁO ĐỂ XÂY:", _titleStyle);
-            innerY += 34f * uiScale;
+            float cx = popupRect.center.x;
+            float cy = popupRect.center.y;
 
-            // 1. Nút Pháo Đơn Cyber (70 Vàng)
-            bool canAffordCannon = GameManager.Instance != null && GameManager.Instance.CanAfford(cannonCost);
-            string cannonLabel = $"[1] Pháo Đơn Cyber (ST: 16-24, Crit)  —  {cannonCost} Vàng";
-            if (!canAffordCannon) cannonLabel += "  (Thiếu vàng)";
+            // 1. Vẽ Khung Vòng Tròn Gỗ Trung Tâm (Ring Frame)
+            float ringSize = 212f * uiScale * popScale;
+            Rect ringRect  = new Rect(cx - ringSize * 0.5f, cy - ringSize * 0.5f, ringSize, ringSize);
+            if (_texRadialRing != null)
+            {
+                GUI.color = Color.white;
+                GUI.DrawTexture(ringRect, _texRadialRing, ScaleMode.StretchToFill, true);
+            }
 
-            GUI.enabled = cannonTowerPrefab != null && canAffordCannon;
-            if (GUI.Button(new Rect(innerX, innerY, btnW, btnH), cannonLabel, _btnGreen))
+            Vector2 screenMouse = GetMouseScreenPosition();
+            Vector2 guiMouse    = new Vector2(screenMouse.x, Screen.height - screenMouse.y);
+
+            float orbitRadius = 86f * uiScale * popScale;
+            float btnSize     = 84f * uiScale * popScale;
+
+            int hoveredOption = -1;
+
+            // Nút 1 (Góc 135° Trái-Trên): Pháo Đơn (70 Vàng, Tầm 3.6)
+            float radCannon = 135f * Mathf.Deg2Rad;
+            Vector2 posCannon = new Vector2(cx + Mathf.Cos(radCannon) * orbitRadius, cy - Mathf.Sin(radCannon) * orbitRadius);
+            bool hoverCannon = DrawRadialTowerNode(posCannon, btnSize, uiScale * popScale, _texBtnCannon, STR_PRICE_CANNON, cannonCost, guiMouse, out bool clickedCannon);
+            if (hoverCannon) hoveredOption = 0;
+            if (clickedCannon)
             {
                 Build(cannonTowerPrefab, cannonCost, TowerType.Cannon);
+                return;
             }
-            GUI.enabled = true;
-            innerY += btnH + 6f * uiScale;
 
-            // 2. Nút Pháo Tên Lửa (100 Vàng)
-            bool canAffordRocket = GameManager.Instance != null && GameManager.Instance.CanAfford(rocketCost);
-            string rocketLabel = $"[2] Pháo Tên Lửa (ST: 38-56, AoE)  —  {rocketCost} Vàng";
-            if (!canAffordRocket) rocketLabel += "  (Thiếu vàng)";
-
-            GUI.enabled = rocketTowerPrefab != null && canAffordRocket;
-            if (GUI.Button(new Rect(innerX, innerY, btnW, btnH), rocketLabel, _btnBlue))
+            // Nút 2 (Góc 45° Phải-Trên): Pháo Tên Lửa (100 Vàng, Tầm 4.4)
+            float radRocket = 45f * Mathf.Deg2Rad;
+            Vector2 posRocket = new Vector2(cx + Mathf.Cos(radRocket) * orbitRadius, cy - Mathf.Sin(radRocket) * orbitRadius);
+            bool hoverRocket = DrawRadialTowerNode(posRocket, btnSize, uiScale * popScale, _texBtnRocket, STR_PRICE_ROCKET, rocketCost, guiMouse, out bool clickedRocket);
+            if (hoverRocket) hoveredOption = 1;
+            if (clickedRocket)
             {
                 Build(rocketTowerPrefab, rocketCost, TowerType.Rocket);
+                return;
             }
-            GUI.enabled = true;
-            innerY += btnH + 6f * uiScale;
 
-            // 3. Nút Tháp Laser/Plasma Tím Mới (150 Vàng - Sát thương siêu to & Xuyên giáp cao!)
-            bool canAffordLaser = GameManager.Instance != null && GameManager.Instance.CanAfford(laserCost);
-            string laserLabel = $"[3] Tháp Laser Tím (ST: 85-125, Siêu Dame)  —  {laserCost} Vàng";
-            if (!canAffordLaser) laserLabel += "  (Thiếu vàng)";
-
+            // Nút 3 (Góc 270° Chính-Dưới): Pháo Laser / Điện Từ (150 Vàng, Tầm 4.8)
+            float radLaser = 270f * Mathf.Deg2Rad;
+            Vector2 posLaser = new Vector2(cx + Mathf.Cos(radLaser) * orbitRadius, cy - Mathf.Sin(radLaser) * orbitRadius);
             GameObject laserPrefabToUse = laserTowerPrefab != null ? laserTowerPrefab : cannonTowerPrefab;
-            GUI.enabled = laserPrefabToUse != null && canAffordLaser;
-            if (GUI.Button(new Rect(innerX, innerY, btnW, btnH), laserLabel, _btnPurple))
+            bool hoverLaser = DrawRadialTowerNode(posLaser, btnSize, uiScale * popScale, _texBtnLaser, STR_PRICE_LASER, laserCost, guiMouse, out bool clickedLaser);
+            if (hoverLaser) hoveredOption = 2;
+            if (clickedLaser)
             {
                 Build(laserPrefabToUse, laserCost, TowerType.Laser);
+                return;
             }
-            GUI.enabled = true;
-            innerY += btnH + 6f * uiScale;
 
-            // Nút Huỷ
-            float cancelW = 100f * uiScale;
-            float cancelH = 28f * uiScale;
-            if (GUI.Button(new Rect(innerX + btnW / 2f - cancelW / 2f, innerY, cancelW, cancelH), "Đóng", _btnCancel))
+            // Nút Đóng [X] Đỏ Tròn (Góc 315° Đông-Nam của Vòng Tròn)
+            float radCancel = 315f * Mathf.Deg2Rad;
+            float cancelDist = 88f * uiScale * popScale;
+            Vector2 posCancel = new Vector2(cx + Mathf.Cos(radCancel) * cancelDist, cy - Mathf.Sin(radCancel) * cancelDist);
+            float cancelSize = 42f * uiScale * popScale;
+            bool hoverCancel = Vector2.Distance(guiMouse, posCancel) <= (cancelSize * 0.52f);
+            float cancelDrawSize = hoverCancel ? cancelSize * 1.12f : cancelSize;
+            Rect cancelRect = new Rect(posCancel.x - cancelDrawSize * 0.5f, posCancel.y - cancelDrawSize * 0.5f, cancelDrawSize, cancelDrawSize);
+
+            if (_texBtnCancel != null)
+            {
+                GUI.color = Color.white;
+                GUI.DrawTexture(cancelRect, _texBtnCancel, ScaleMode.StretchToFill, true);
+            }
+            if (GUI.Button(cancelRect, GUIContent.none, GUIStyle.none))
             {
                 CloseAllMenus();
+                return;
             }
+
+            // Hiển thị vòng Tầm Đánh Preview & nhãn thông tin nhanh khi Hover vào 1 trong 3 nút pháo
+            if (hoveredOption == 0)
+            {
+                SetPreviewRange(true, 3.6f);
+                DrawRadialTooltip(cx, cy - 134f * uiScale, uiScale, STR_TOOLTIP_CANNON);
+            }
+            else if (hoveredOption == 1)
+            {
+                SetPreviewRange(true, 4.4f);
+                DrawRadialTooltip(cx, cy - 134f * uiScale, uiScale, STR_TOOLTIP_ROCKET);
+            }
+            else if (hoveredOption == 2)
+            {
+                SetPreviewRange(true, 4.8f);
+                DrawRadialTooltip(cx, cy - 134f * uiScale, uiScale, STR_TOOLTIP_LASER);
+            }
+            else
+            {
+                SetPreviewRange(false);
+            }
+
+            GUI.color = Color.white;
         }
 
-        // Popup Nâng Cấp Tháp (Hỗ trợ Cấp 1 -> Cấp 2 -> Cấp 3 MAX)
+        private bool DrawRadialTowerNode(
+            Vector2 nodeCenter,
+            float baseBtnSize,
+            float scale,
+            Texture2D iconTex,
+            string cachedPriceText,
+            int cost,
+            Vector2 guiMouse,
+            out bool clicked)
+        {
+            clicked = false;
+            bool canAfford = GameManager.Instance != null && GameManager.Instance.CanAfford(cost);
+            bool isHovered = Vector2.Distance(guiMouse, nodeCenter) <= (baseBtnSize * 0.54f);
+
+            float drawSize = isHovered ? baseBtnSize * 1.12f : baseBtnSize;
+            Rect iconRect  = new Rect(nodeCenter.x - drawSize * 0.5f, nodeCenter.y - drawSize * 0.5f, drawSize, drawSize);
+
+            if (iconTex != null)
+            {
+                GUI.color = canAfford
+                    ? (isHovered ? new Color(1f, 1f, 0.92f, 1f) : Color.white)
+                    : new Color(0.55f, 0.52f, 0.50f, 0.92f);
+                GUI.DrawTexture(iconRect, iconTex, ScaleMode.StretchToFill, true);
+            }
+
+            // Bảng Giá Vàng (Price Badge) gắn ngay dưới đáy nút tròn
+            float badgeW = 68f * scale * (isHovered ? 1.08f : 1f);
+            float badgeH = 27f * scale * (isHovered ? 1.08f : 1f);
+            Rect badgeRect = new Rect(
+                nodeCenter.x - badgeW * 0.5f,
+                nodeCenter.y + drawSize * 0.34f - badgeH * 0.2f,
+                badgeW,
+                badgeH
+            );
+
+            if (_texPriceBadge != null)
+            {
+                GUI.color = canAfford ? Color.white : new Color(0.75f, 0.55f, 0.55f, 0.95f);
+                GUI.DrawTexture(badgeRect, _texPriceBadge, ScaleMode.StretchToFill, true);
+            }
+
+            GUI.color = Color.white;
+            // Căn chữ số tiền lệch nhẹ sang phải đồng xu vàng trong Price Badge
+            Rect textRect = new Rect(badgeRect.x + badgeW * 0.24f, badgeRect.y - 1f * scale, badgeW * 0.72f, badgeH);
+            GUIStyle priceSt = canAfford ? _priceLabelStyle : _priceUnaffordableStyle;
+            if (priceSt != null)
+            {
+                // Viền bóng đổ chữ đậm kiểu Kingdom Rush
+                Color origCol = priceSt.normal.textColor;
+                priceSt.normal.textColor = new Color(0.16f, 0.08f, 0.02f, 0.95f);
+                GUI.Label(new Rect(textRect.x + 1.5f, textRect.y + 1.5f, textRect.width, textRect.height), cachedPriceText, priceSt);
+                priceSt.normal.textColor = origCol;
+                GUI.Label(textRect, cachedPriceText, priceSt);
+            }
+
+            // Vùng bấm phủ trọn cả Icon tròn và Price Badge
+            Rect hitRect = new Rect(
+                Mathf.Min(iconRect.x, badgeRect.x),
+                iconRect.y,
+                Mathf.Max(iconRect.width, badgeRect.width),
+                (badgeRect.yMax - iconRect.y)
+            );
+
+            if (GUI.Button(hitRect, GUIContent.none, GUIStyle.none))
+            {
+                if (canAfford)
+                {
+                    clicked = true;
+                }
+            }
+
+            return isHovered || hitRect.Contains(guiMouse);
+        }
+
+        private void DrawRadialTooltip(float cx, float topY, float uiScale, string tooltipText)
+        {
+            if (_radialTooltipStyle == null) return;
+            float w = 268f * uiScale;
+            float h = 26f * uiScale;
+            Rect r = new Rect(cx - w * 0.5f, Mathf.Max(8f, topY), w, h);
+            GUI.Box(r, tooltipText, _radialTooltipStyle);
+        }
+
+        private static string GetCachedCostString(int cost)
+        {
+            if (!_cachedCostStrings.TryGetValue(cost, out string s))
+            {
+                s = cost.ToString();
+                _cachedCostStrings[cost] = s;
+            }
+            return s;
+        }
+
+        private static string GetCachedRefundString(int refund)
+        {
+            if (!_cachedRefundStrings.TryGetValue(refund, out string s))
+            {
+                s = "+" + refund.ToString();
+                _cachedRefundStrings[refund] = s;
+            }
+            return s;
+        }
+
+        private static string GetCachedTowerHeader(Tower tower)
+        {
+            int key = ((int)tower.Type * 10) + tower.Level;
+            if (!_cachedHeaderStrings.TryGetValue(key, out string s))
+            {
+                s = $"{tower.TowerTypeName} (Cấp {tower.Level}/{tower.MaxLevel})  •  ST: {tower.DamageRangeText}";
+                _cachedHeaderStrings[key] = s;
+            }
+            return s;
+        }
+
+        // ─── Vẽ Vòng Tròn Tương Tác Khi Bấm Vào Tháp Pháo (Nâng Cấp Cấp 1->2->3 & Bán Pháo Hoàn Vàng)
         private void DrawUpgradePopup()
         {
             float uiScale = Mathf.Clamp(Screen.height / 1080f, 0.85f, 1.85f);
-            GUI.Box(popupRect, "", _boxStyle);
+            CalculateRadialPopupRect();
 
-            float innerX = popupRect.x + 16f * uiScale;
-            float innerY = popupRect.y + 14f * uiScale;
-            float btnW   = popupRect.width - 32f * uiScale;
+            // Spring Pop Scale (EaseOutBack từ 0 -> 1 trong 0.22s)
+            float t = Mathf.Clamp01(_radialOpenElapsed / RADIAL_POP_DURATION);
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1f;
+            float tm1 = t - 1f;
+            float popScale = Mathf.Max(0.05f, 1f + c3 * tm1 * tm1 * tm1 + c1 * tm1 * tm1);
 
-            string levelBadge = currentTower.Level >= currentTower.MaxLevel
-                ? "★★★ (CẤP 3 TỐI ĐA)"
-                : (currentTower.Level == 2 ? "★★ (Cấp 2/3)" : "★ (Cấp 1/3)");
-            GUI.Label(new Rect(innerX, innerY, btnW, 30f * uiScale), $"{currentTower.TowerTypeName}  {levelBadge}", _titleStyle);
-            innerY += 32f * uiScale;
+            float cx = popupRect.center.x;
+            float cy = popupRect.center.y;
 
-            // Thông số chi tiết tháp
-            int armorPenPct = Mathf.RoundToInt(currentTower.ArmorPenetration * 100f);
-            string stats = $"Sát thương: <b>{currentTower.DamageRangeText}</b>  |  Tầm: <b>{currentTower.AttackRange:F1}</b>  |  Phá giáp: <b>{armorPenPct}%</b>";
-            GUI.Label(new Rect(innerX, innerY, btnW, 26f * uiScale), stats, _subTitleStyle);
-            innerY += 32f * uiScale;
+            // 1. Vẽ Khung Vòng Tròn Gỗ Trung Tâm (Ring Frame) bao quanh Tháp Pháo
+            float ringSize = 212f * uiScale * popScale;
+            Rect ringRect  = new Rect(cx - ringSize * 0.5f, cy - ringSize * 0.5f, ringSize, ringSize);
+            if (_texRadialRing != null)
+            {
+                GUI.color = Color.white;
+                GUI.DrawTexture(ringRect, _texRadialRing, ScaleMode.StretchToFill, true);
+            }
+
+            Vector2 screenMouse = GetMouseScreenPosition();
+            Vector2 guiMouse    = new Vector2(screenMouse.x, Screen.height - screenMouse.y);
+
+            float orbitRadius = 86f * uiScale * popScale;
+            float btnSize     = 84f * uiScale * popScale;
+
+            int hoveredAction = -1; // 0: Upgrade, 1: Sell
+
+            // 2. Nút Trên Cùng (Góc 90° Chính-Bắc / 12h): NÂNG CẤP THÁP (hoặc Huy Hiệu MAX ★★★)
+            float radUp = 90f * Mathf.Deg2Rad;
+            Vector2 posUpgrade = new Vector2(cx + Mathf.Cos(radUp) * orbitRadius, cy - Mathf.Sin(radUp) * orbitRadius);
 
             if (currentTower.CanUpgrade)
             {
                 int upCost = currentTower.UpgradeCost;
-                int nextLv = currentTower.Level + 1;
-                bool canAfford = GameManager.Instance != null && GameManager.Instance.CanAfford(upCost);
-
-                string upLabel = $"★  NÂNG CẤP LÊN CẤP {nextLv}  —  {upCost} Vàng";
-                if (!canAfford) upLabel += "  (Thiếu vàng)";
-
-                float upBtnH = 48f * uiScale;
-                GUI.enabled = canAfford;
-                if (GUI.Button(new Rect(innerX, innerY, btnW, upBtnH), upLabel, _btnYellow))
+                string upCostStr = GetCachedCostString(upCost);
+                Texture2D upIcon = _texBtnUpgrade != null ? _texBtnUpgrade : GetTowerTypeIcon(currentTower.Type);
+                bool hoverUp = DrawRadialTowerNode(posUpgrade, btnSize, uiScale * popScale, upIcon, upCostStr, upCost, guiMouse, out bool clickedUp);
+                if (hoverUp) hoveredAction = 0;
+                if (clickedUp)
                 {
                     PerformUpgrade(upCost);
+                    return;
                 }
-                GUI.enabled = true;
-                innerY += upBtnH + 6f * uiScale;
-
-                // Chi tiết thông số tăng thêm khi nâng cấp lên Cấp 2 hoặc Cấp 3
-                GUI.Label(new Rect(innerX, innerY, btnW, 26f * uiScale), $"<color=#A0FFA0>+ Cấp {nextLv}: {currentTower.NextUpgradeBonusSummary}</color>", _subTitleStyle);
-                innerY += 32f * uiScale;
             }
             else
             {
-                GUI.Label(new Rect(innerX, innerY, btnW, 38f * uiScale), "★ THÁP ĐÃ ĐẠT CẤP 3 TỐI ĐA (LEVEL 3 MAX)", _titleStyle);
-                innerY += 48f * uiScale;
+                // Đã đạt Cấp 3 Tối Đa (MAX)
+                Texture2D maxIcon = _texBtnMax != null ? _texBtnMax : GetTowerTypeIcon(currentTower.Type);
+                bool hoverMax = DrawRadialTowerNode(posUpgrade, btnSize, uiScale * popScale, maxIcon, STR_MAX_LEVEL, 0, guiMouse, out _);
+                if (hoverMax) hoveredAction = 0;
             }
 
-            // Nút Đóng
-            float cancelW = 100f * uiScale;
-            float cancelH = 28f * uiScale;
-            if (GUI.Button(new Rect(innerX + btnW / 2f - cancelW / 2f, innerY, cancelW, cancelH), "Đóng", _btnCancel))
+            // 3. Nút Dưới Cùng (Góc 270° Chính-Nam / 6h): BÁN PHÁO (Hoàn 70% Vàng)
+            float radSell = 270f * Mathf.Deg2Rad;
+            Vector2 posSell = new Vector2(cx + Mathf.Cos(radSell) * orbitRadius, cy - Mathf.Sin(radSell) * orbitRadius);
+            int refundGold = currentTower.SellRefundGold;
+            string refundStr = GetCachedRefundString(refundGold);
+            Texture2D sellIcon = _isConfirmingSell
+                ? (_texBtnConfirmSell != null ? _texBtnConfirmSell : _texBtnSell)
+                : _texBtnSell;
+
+            bool hoverSell = DrawRadialSellNode(posSell, btnSize, uiScale * popScale, sellIcon, refundStr, _isConfirmingSell, guiMouse, out bool clickedSell);
+            if (hoverSell) hoveredAction = 1;
+            if (clickedSell)
+            {
+                if (!_isConfirmingSell)
+                {
+                    _isConfirmingSell = true;
+                }
+                else
+                {
+                    SellTower();
+                    return;
+                }
+            }
+
+            // 4. Nút Đóng [X] Đỏ Tròn (Góc 315° Đông-Nam của Vòng Tròn)
+            float radCancel = 315f * Mathf.Deg2Rad;
+            float cancelDist = 88f * uiScale * popScale;
+            Vector2 posCancel = new Vector2(cx + Mathf.Cos(radCancel) * cancelDist, cy - Mathf.Sin(radCancel) * cancelDist);
+            float cancelSize = 42f * uiScale * popScale;
+            bool hoverCancel = Vector2.Distance(guiMouse, posCancel) <= (cancelSize * 0.52f);
+            float cancelDrawSize = hoverCancel ? cancelSize * 1.12f : cancelSize;
+            Rect cancelRect = new Rect(posCancel.x - cancelDrawSize * 0.5f, posCancel.y - cancelDrawSize * 0.5f, cancelDrawSize, cancelDrawSize);
+
+            if (_texBtnCancel != null)
+            {
+                GUI.color = Color.white;
+                GUI.DrawTexture(cancelRect, _texBtnCancel, ScaleMode.StretchToFill, true);
+            }
+            if (GUI.Button(cancelRect, GUIContent.none, GUIStyle.none))
             {
                 CloseAllMenus();
+                return;
             }
+
+            // 5. Hiển thị thanh thông tin gọn gàng phía trên & Preview tầm bắn cấp tiếp theo khi Hover nút Nâng Cấp
+            if (hoveredAction == 0 && currentTower.CanUpgrade)
+            {
+                SetPreviewRange(true, currentTower.NextLevelAttackRange);
+                DrawRadialTooltip(cx, cy - 142f * uiScale, uiScale, currentTower.NextUpgradeBonusSummary);
+            }
+            else if (hoveredAction == 1)
+            {
+                SetPreviewRange(false);
+                DrawRadialTooltip(
+                    cx,
+                    cy - 142f * uiScale,
+                    uiScale,
+                    _isConfirmingSell ? "BẤM LẦN NỮA ĐỂ XÁC NHẬN BÁN PHÁO!" : "BÁN PHÁO  •  Thu hồi 70% Vàng đã đầu tư"
+                );
+            }
+            else
+            {
+                SetPreviewRange(false);
+                DrawRadialTooltip(cx, cy - 142f * uiScale, uiScale, GetCachedTowerHeader(currentTower));
+            }
+
+            GUI.color = Color.white;
+        }
+
+        private Texture2D GetTowerTypeIcon(TowerType type)
+        {
+            switch (type)
+            {
+                case TowerType.Cannon: return _texBtnCannon;
+                case TowerType.Rocket: return _texBtnRocket;
+                case TowerType.Laser:  return _texBtnLaser;
+                default:               return _texBtnCannon;
+            }
+        }
+
+        private bool DrawRadialSellNode(
+            Vector2 nodeCenter,
+            float baseBtnSize,
+            float scale,
+            Texture2D iconTex,
+            string cachedRefundText,
+            bool isConfirmState,
+            Vector2 guiMouse,
+            out bool clicked)
+        {
+            clicked = false;
+            bool isHovered = Vector2.Distance(guiMouse, nodeCenter) <= (baseBtnSize * 0.54f);
+            float drawSize = isHovered ? baseBtnSize * 1.12f : baseBtnSize;
+            Rect iconRect  = new Rect(nodeCenter.x - drawSize * 0.5f, nodeCenter.y - drawSize * 0.5f, drawSize, drawSize);
+
+            if (iconTex != null)
+            {
+                GUI.color = isHovered ? new Color(1f, 1f, 0.92f, 1f) : Color.white;
+                GUI.DrawTexture(iconRect, iconTex, ScaleMode.StretchToFill, true);
+            }
+            else
+            {
+                // Fallback nút tròn đỏ/cam vàng khi chưa nạp sprite nút Bán
+                GUIStyle fallbackStyle = isConfirmState ? _btnGreen : _btnCancel;
+                GUI.Box(iconRect, isConfirmState ? "✔ BÁN" : "💰 BÁN", fallbackStyle);
+            }
+
+            // Bảng Giá Vàng Hoàn Lại (+50, +126...) gắn ngay dưới đáy nút Bán
+            float badgeW = 72f * scale * (isHovered ? 1.08f : 1f);
+            float badgeH = 27f * scale * (isHovered ? 1.08f : 1f);
+            Rect badgeRect = new Rect(
+                nodeCenter.x - badgeW * 0.5f,
+                nodeCenter.y + drawSize * 0.34f - badgeH * 0.2f,
+                badgeW,
+                badgeH
+            );
+
+            if (_texPriceBadge != null)
+            {
+                GUI.color = isConfirmState ? new Color(0.78f, 1f, 0.78f, 1f) : Color.white;
+                GUI.DrawTexture(badgeRect, _texPriceBadge, ScaleMode.StretchToFill, true);
+            }
+
+            GUI.color = Color.white;
+            Rect textRect = new Rect(badgeRect.x + badgeW * 0.22f, badgeRect.y - 1f * scale, badgeW * 0.75f, badgeH);
+            if (_priceLabelStyle != null)
+            {
+                Color origCol = _priceLabelStyle.normal.textColor;
+                _priceLabelStyle.normal.textColor = new Color(0.16f, 0.08f, 0.02f, 0.95f);
+                GUI.Label(new Rect(textRect.x + 1.5f, textRect.y + 1.5f, textRect.width, textRect.height), cachedRefundText, _priceLabelStyle);
+                _priceLabelStyle.normal.textColor = isConfirmState ? new Color(0.55f, 1f, 0.55f, 1f) : origCol;
+                GUI.Label(textRect, cachedRefundText, _priceLabelStyle);
+                _priceLabelStyle.normal.textColor = origCol;
+            }
+
+            Rect hitRect = new Rect(
+                Mathf.Min(iconRect.x, badgeRect.x),
+                iconRect.y,
+                Mathf.Max(iconRect.width, badgeRect.width),
+                (badgeRect.yMax - iconRect.y)
+            );
+
+            if (GUI.Button(hitRect, GUIContent.none, GUIStyle.none))
+            {
+                clicked = true;
+            }
+
+            return isHovered || hitRect.Contains(guiMouse);
         }
 
         // ─── Xử lý Xây & Nâng Cấp ──────────────────────────────────────────
@@ -411,7 +855,7 @@ namespace TowerDefense.Towers
             currentTower = towerGO.GetComponent<Tower>();
             if (currentTower != null)
             {
-                currentTower.ConfigureForType(towerType);
+                currentTower.ConfigureForType(towerType, cost);
             }
 
             GameObject towersGroup = GameObject.Find("Towers");
@@ -444,31 +888,48 @@ namespace TowerDefense.Towers
             {
                 currentTower.UpdateRangeIndicatorScale();
             }
+            TriggerTapBounce();
             CloseAllMenus();
+        }
+
+        // ─── Bán Pháo & Thu Hồi Vàng (70% Tổng Vàng Đầu Tư) ────────────────
+        private void SellTower()
+        {
+            if (!HasTower || currentTower == null) return;
+
+            int refund = currentTower.SellRefundGold;
+            string soldTowerName = currentTower.TowerTypeName;
+            int soldLevel = currentTower.Level;
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.AddGold(refund);
+            }
+
+            currentTower.OnSold();
+
+            if (buildEffectPrefab != null)
+            {
+                Instantiate(buildEffectPrefab, transform.position, Quaternion.identity);
+            }
+
+            Destroy(currentTower.gameObject);
+            currentTower = null;
+            isBuilt = false;
+
+            CloseAllMenus();
+            TriggerTapBounce();
+
+            int currentGold = GameManager.Instance != null ? GameManager.Instance.Gold : 0;
+            Debug.Log($"<color=#FFD700><b>💰 [BÁN PHÁO] Đã bán {soldTowerName} (Cấp {soldLevel}) -> Hoàn lại +{refund} Vàng! Tổng vàng hiện tại: {currentGold}</b></color>");
         }
 
         // ─── Helper ────────────────────────────────────────────────────────
         private void ResetVisual()
         {
             transform.localScale = initialScale;
-            if (HasTower)
-            {
-                if (baseRenderer != null) baseRenderer.enabled = false;
-                if (indicatorRenderer != null) indicatorRenderer.enabled = false;
-            }
-            else
-            {
-                if (baseRenderer != null)
-                {
-                    baseRenderer.enabled = true;
-                    baseRenderer.color = normalColor;
-                }
-                if (indicatorRenderer != null)
-                {
-                    indicatorRenderer.enabled = true;
-                    indicatorRenderer.color = new Color(1f, 1f, 1f, 0.7f);
-                }
-            }
+            if (baseRenderer != null) baseRenderer.enabled = false;
+            if (indicatorRenderer != null) indicatorRenderer.enabled = false;
         }
 
         private Vector2 GetMouseWorldPosition()
@@ -569,6 +1030,42 @@ namespace TowerDefense.Towers
 
             // Nút Huỷ (đỏ gỗ bo góc viền vàng)
             _btnCancel = CreateButtonStyle(Mathf.RoundToInt(13 * uiScale), new Color(0.75f, 0.22f, 0.18f), new Color(0.42f, 0.10f, 0.10f), gold, new Color(1f, 0.90f, 0.90f));
+
+            // ── Tải & Cache bộ Sprite Vòng Tròn Đặt Trụ & Nâng Cấp/Bán Pháo Kingdom Rush (Zero-GC)
+            if (_texRadialRing     == null) _texRadialRing     = CyberAssetLoader.GetTexture("ui_radial_ring");
+            if (_texBtnCannon      == null) _texBtnCannon      = CyberAssetLoader.GetTexture("ui_radial_btn_cannon");
+            if (_texBtnRocket      == null) _texBtnRocket      = CyberAssetLoader.GetTexture("ui_radial_btn_rocket");
+            if (_texBtnLaser       == null) _texBtnLaser       = CyberAssetLoader.GetTexture("ui_radial_btn_laser");
+            if (_texBtnUpgrade     == null) _texBtnUpgrade     = CyberAssetLoader.GetTexture("ui_radial_btn_upgrade");
+            if (_texBtnMax         == null) _texBtnMax         = CyberAssetLoader.GetTexture("ui_radial_btn_max");
+            if (_texBtnSell        == null) _texBtnSell        = CyberAssetLoader.GetTexture("ui_radial_btn_sell");
+            if (_texBtnConfirmSell == null) _texBtnConfirmSell = CyberAssetLoader.GetTexture("ui_radial_btn_confirm_sell");
+            if (_texPriceBadge     == null) _texPriceBadge     = CyberAssetLoader.GetTexture("ui_radial_price_badge");
+            if (_texBtnCancel      == null) _texBtnCancel      = CyberAssetLoader.GetTexture("ui_radial_cancel");
+
+            int szPrice = Mathf.RoundToInt(15 * uiScale);
+            _priceLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                font      = _fontTitleUi,
+                fontStyle = FontStyle.Bold,
+                fontSize  = szPrice,
+                alignment = TextAnchor.MiddleCenter
+            };
+            _priceLabelStyle.normal.textColor = new Color(1f, 0.96f, 0.78f, 1f);
+
+            _priceUnaffordableStyle = new GUIStyle(_priceLabelStyle);
+            _priceUnaffordableStyle.normal.textColor = new Color(1f, 0.38f, 0.38f, 1f);
+
+            _radialTooltipStyle = new GUIStyle(GUI.skin.box)
+            {
+                font      = _fontUi,
+                fontStyle = FontStyle.Bold,
+                fontSize  = Mathf.RoundToInt(12 * uiScale),
+                alignment = TextAnchor.MiddleCenter
+            };
+            _radialTooltipStyle.normal.background = MakeRounded(32, 10, new Color(0.22f, 0.14f, 0.08f, 0.95f), new Color(0.12f, 0.07f, 0.04f, 0.95f), gold, 2);
+            _radialTooltipStyle.border = new RectOffset(10, 10, 10, 10);
+            _radialTooltipStyle.normal.textColor = new Color(1f, 0.94f, 0.72f, 1f);
         }
 
         private static GUIStyle CreateButtonStyle(int fontSize, Color top, Color bottom, Color border, Color text)

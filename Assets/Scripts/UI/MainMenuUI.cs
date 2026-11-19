@@ -254,7 +254,7 @@ namespace TowerDefense.UI
             string guide =
                 "<b>1. MUA VÀ XÂY 3 LOẠI PHÁO CYBER:</b>\n" +
                 "• Click các ô bệ đá dọc đường đi để chọn mua 1 trong 3 loại pháo:\n" +
-                "  - <b>[Pháo Đơn Cyber] (70 Vàng)</b>: Sát thương 16-24, bắn nhanh, có tỉ lệ Chí mạng.\n" +
+                "  - <b>[Pháo Đơn] (70 Vàng)</b>: Sát thương 16-24, tốc độ bắn nhanh ổn định.\n" +
                 "  - <b>[Pháo Tên Lửa] (100 Vàng)</b>: Sát thương 38-56 nổ lan, xuyên giáp 55%.\n" +
                 "  - <b>[Tháp Laser Tím] (150 Vàng)</b>: Sát thương 85-125, xuyên giáp 70% - vũ khí tối thượng!\n\n" +
                 "<b>2. NÂNG CẤP PHÁO 3 CẤP ĐỘ:</b>\n" +

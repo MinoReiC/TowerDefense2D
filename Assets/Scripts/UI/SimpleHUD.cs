@@ -84,7 +84,7 @@ namespace TowerDefense.UI
 
             if (Time.time - _spotCacheTime > 1f)
             {
-                _cachedSpots   = Object.FindObjectsByType<TowerBuildSpot>(FindObjectsSortMode.None);
+                _cachedSpots   = Object.FindObjectsByType<TowerBuildSpot>(FindObjectsInactive.Exclude);
                 _spotCacheTime = Time.time;
             }
 

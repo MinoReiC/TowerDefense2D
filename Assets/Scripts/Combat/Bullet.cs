@@ -22,25 +22,28 @@ namespace TowerDefense.Combat
         private SpriteRenderer spriteRenderer;
         private float frameTimer = 0f;
         private int currentFrameIndex = 0;
+        private float _spriteAngleOffset = -90f;
+        private Vector3 _lastMoveDir = Vector3.up;
 
         public void Seek(Transform targetTransform)
         {
             target = targetTransform;
         }
 
-        public void SetDamage(float newDamage, float newArmorPen = 0.15f, bool isCrit = false)
+        public void SetDamage(float newDamage, float newArmorPen = 0.15f)
         {
             damage = newDamage;
             armorPenetration = newArmorPen;
-            if (isCrit)
-            {
-                transform.localScale *= 1.35f;
-                if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
-                if (spriteRenderer != null) spriteRenderer.color = new Color(1f, 0.90f, 0.25f, 1f);
-            }
         }
 
-        public void SetProjectileVisual(Sprite projSprite, Color tintColor, float scaleMultiplier = 1f, float customSpeed = -1f)
+        public void SetProjectileVisual(
+            Sprite projSprite,
+            Color tintColor,
+            float scaleMultiplier = 1f,
+            float customSpeed = -1f,
+            float spriteAngleOffset = -90f,
+            bool spinContinuously = false,
+            float spinRate = 360f)
         {
             if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
             if (spriteRenderer != null)
@@ -50,6 +53,9 @@ namespace TowerDefense.Combat
             }
             transform.localScale *= scaleMultiplier;
             if (customSpeed > 0f) speed = customSpeed;
+            _spriteAngleOffset = spriteAngleOffset;
+            rotateContinuously = spinContinuously;
+            spinSpeed = spinRate;
         }
 
         /// <summary>
@@ -87,26 +93,35 @@ namespace TowerDefense.Combat
 
             if (target == null)
             {
-                // Khi mục tiêu bị tiêu diệt trước, đạn bay thẳng tiếp theo hướng hiện tại
-                transform.Translate(Vector3.up * (speed * Time.deltaTime), Space.Self);
+                // Khi mục tiêu bị tiêu diệt trước, đạn bay thẳng tiếp theo hướng di chuyển cuối cùng (Zero-GC)
+                transform.position += _lastMoveDir * (speed * Time.deltaTime);
                 return;
             }
 
             Vector3 dir = target.position - transform.position;
-            dir.z = 0;
+            dir.z = 0f;
             float distanceThisFrame = speed * Time.deltaTime;
+            float dist = dir.magnitude;
 
-            if (dir.magnitude <= distanceThisFrame)
+            if (dist <= distanceThisFrame)
             {
                 HitTarget();
                 return;
             }
 
-            // Xoay viên đạn hướng vào mục tiêu
-            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
-            transform.rotation = Quaternion.Euler(0, 0, angle);
+            if (dist > 0.0001f)
+            {
+                _lastMoveDir = dir / dist;
+            }
 
-            transform.position += dir.normalized * distanceThisFrame;
+            // Xoay viên đạn hướng vào mục tiêu (nếu không bật chế độ xoay tròn tự thân như Bom Cấp 3)
+            if (!rotateContinuously)
+            {
+                float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + _spriteAngleOffset;
+                transform.rotation = Quaternion.Euler(0f, 0f, angle);
+            }
+
+            transform.position += _lastMoveDir * distanceThisFrame;
         }
 
         private void UpdateAnimation()
