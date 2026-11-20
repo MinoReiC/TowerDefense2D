@@ -112,6 +112,11 @@ namespace TowerDefense.Towers
             initialScale = transform.localScale;
             if (initialScale.sqrMagnitude < 0.01f) initialScale = Vector3.one;
 
+            float mapScale = GameManager.GetMapTowerVisualScale();
+            initialScale *= mapScale;
+            transform.localScale = initialScale;
+            clickRadius = Mathf.Max(clickRadius, 0.65f * mapScale);
+
             // Chuẩn hóa giá xây dựng theo kinh tế Kingdom Rush (Pháo Đơn: 70, Tên Lửa: 100, Tháp Laser Tím: 150)
             cannonCost = 70;
             rocketCost = 100;
@@ -295,7 +300,8 @@ namespace TowerDefense.Towers
                 _previewRangeRenderer.enabled = visible;
             if (visible)
             {
-                float diameter = range * 2f;
+                float parentScale = Mathf.Max(0.01f, transform.localScale.x);
+                float diameter = (range * 2f) / parentScale;
                 _previewRangeRenderer.transform.localScale = new Vector3(diameter, diameter, 1f);
             }
         }
@@ -863,7 +869,10 @@ namespace TowerDefense.Towers
                 towerGO.transform.SetParent(towersGroup.transform, true);
 
             if (buildEffectPrefab != null)
-                Instantiate(buildEffectPrefab, transform.position, Quaternion.identity);
+            {
+                GameObject fx = Instantiate(buildEffectPrefab, transform.position, Quaternion.identity);
+                fx.transform.localScale *= GameManager.GetMapTowerVisualScale();
+            }
 
             // Ẩn toàn bộ hình chờ của ô đất vì Tháp vừa mua đã mang theo Đế Trụ (tile180..183) + Ụ Pháo!
             if (baseRenderer != null) baseRenderer.enabled = false;
@@ -910,7 +919,8 @@ namespace TowerDefense.Towers
 
             if (buildEffectPrefab != null)
             {
-                Instantiate(buildEffectPrefab, transform.position, Quaternion.identity);
+                GameObject fx = Instantiate(buildEffectPrefab, transform.position, Quaternion.identity);
+                fx.transform.localScale *= GameManager.GetMapTowerVisualScale();
             }
 
             Destroy(currentTower.gameObject);

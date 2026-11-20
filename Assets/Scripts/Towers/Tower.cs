@@ -73,6 +73,7 @@ namespace TowerDefense.Towers
         private int _currentDirIndex = 0; // 0: Right, 1: Up-Right, 2: Up, 3: Up-Left, 4: Left, 5: Down-Left, 6: Down, 7: Down-Right
         private Vector3 _lastAimDir = Vector3.right;
         private float _baseGunScale = 1.0f;
+        private float _mapVisualScale = 1.0f;
         private bool _isFiringAnim = false;
         private float _firingAnimTimer = 0f;
         private const float FIRE_ANIM_DURATION = 0.28f;
@@ -172,6 +173,7 @@ namespace TowerDefense.Towers
         private void Awake()
         {
             maxLevel = 3;
+            _mapVisualScale = GameManager.GetMapTowerVisualScale();
             if (baseRenderer == null) baseRenderer = GetComponent<SpriteRenderer>();
             if (turretGun == null)
             {
@@ -254,22 +256,22 @@ namespace TowerDefense.Towers
 
                 if (level == 1)
                 {
-                    laserLineRenderer.startWidth = 0.24f;
-                    laserLineRenderer.endWidth = 0.20f;
+                    laserLineRenderer.startWidth = 0.24f * _mapVisualScale;
+                    laserLineRenderer.endWidth = 0.20f * _mapVisualScale;
                     laserLineRenderer.startColor = new Color(0.35f, 0.95f, 1f, 1f);
                     laserLineRenderer.endColor   = new Color(0.15f, 0.85f, 1f, 0.90f);
                 }
                 else if (level == 2)
                 {
-                    laserLineRenderer.startWidth = 0.30f;
-                    laserLineRenderer.endWidth = 0.24f;
+                    laserLineRenderer.startWidth = 0.30f * _mapVisualScale;
+                    laserLineRenderer.endWidth = 0.24f * _mapVisualScale;
                     laserLineRenderer.startColor = new Color(0.85f, 0.55f, 1f, 1f);
                     laserLineRenderer.endColor   = new Color(0.35f, 0.90f, 1f, 0.95f);
                 }
                 else
                 {
-                    laserLineRenderer.startWidth = 0.38f;
-                    laserLineRenderer.endWidth = 0.28f;
+                    laserLineRenderer.startWidth = 0.38f * _mapVisualScale;
+                    laserLineRenderer.endWidth = 0.28f * _mapVisualScale;
                     laserLineRenderer.startColor = new Color(1f, 0.92f, 0.40f, 1f);
                     laserLineRenderer.endColor   = new Color(0.25f, 0.98f, 1f, 1f);
                 }
@@ -293,7 +295,7 @@ namespace TowerDefense.Towers
                 laserMuzzleGlow.sprite = CyberAssetLoader.GetLaserOrbSprite(level);
                 laserMuzzleGlow.color = Color.white;
                 laserMuzzleGlow.sortingOrder = 7;
-                laserMuzzleGlow.transform.localScale = Vector3.one * (level == 3 ? 0.65f : (level == 2 ? 0.55f : 0.45f));
+                laserMuzzleGlow.transform.localScale = Vector3.one * ((level == 3 ? 0.65f : (level == 2 ? 0.55f : 0.45f)) * _mapVisualScale);
                 laserMuzzleGlow.enabled = false;
             }
 
@@ -314,7 +316,7 @@ namespace TowerDefense.Towers
                 laserImpactGlow.sprite = CyberAssetLoader.GetLaserOrbSprite(level);
                 laserImpactGlow.color = (level == 3) ? new Color(1f, 0.92f, 0.45f, 1f) : ((level == 2) ? new Color(0.85f, 0.65f, 1f, 1f) : new Color(0.40f, 0.95f, 1f, 1f));
                 laserImpactGlow.sortingOrder = 7;
-                laserImpactGlow.transform.localScale = Vector3.one * (level == 3 ? 0.85f : 0.70f);
+                laserImpactGlow.transform.localScale = Vector3.one * ((level == 3 ? 0.85f : 0.70f) * _mapVisualScale);
                 laserImpactGlow.enabled = false;
             }
         }
@@ -367,6 +369,7 @@ namespace TowerDefense.Towers
         private void ApplyLevelStatsAndVisuals()
         {
             maxLevel = 3;
+            _mapVisualScale = GameManager.GetMapTowerVisualScale();
             string baseSpriteName = "towerDefense_tile180";
             string gunSpriteName  = "cannon_1barrel_lvl1";
             Color baseColor = Color.white;
@@ -405,7 +408,7 @@ namespace TowerDefense.Towers
                     minDamage        = 32;
                     maxDamage        = 48;
                     damage           = 40f;
-                    fireRate         = 1.60f;
+                    fireRate         = 1.25f;
                     attackRange      = 4.4f;
                     armorPenetration = 0.30f;
                     critChance       = 0f;
@@ -426,7 +429,7 @@ namespace TowerDefense.Towers
                     minDamage        = 60;
                     maxDamage        = 88;
                     damage           = 74f;
-                    fireRate         = 2.00f;
+                    fireRate         = 1.25f;
                     attackRange      = 5.2f;
                     armorPenetration = 0.45f;
                     critChance       = 0f;
@@ -435,7 +438,7 @@ namespace TowerDefense.Towers
 
                     baseSpriteName = "kr_dirt_pad_clean";
                     gunSpriteName  = "kr_cannon_lvl3_idle";
-                    gunScale       = 1.16f;
+                    gunScale       = 1.10f;
                     _currentProjectileSpriteName  = "kr_bullet_cannon_lvl3";
                     _currentProjectileScale       = 1.12f;
                     _currentProjectileSpeed       = 16f;
@@ -519,7 +522,7 @@ namespace TowerDefense.Towers
             else // 🔮 TowerType.Laser (THÁP LAZE ĐỨNG KINGDOM RUSH — Tháp đá thẳng đứng, Quả cầu ngọc lam bắn tia Laze)
             {
                 _cannonDirSprites = null; // Tháp Laze đứng thẳng 360°, không dùng sprite hướng xoay có tia vẽ sẵn
-                _cannonFireFrames = CyberAssetLoader.GetLaserLvl1FireFrames();
+                _cannonFireFrames = CyberAssetLoader.GetLaserFireFrames(level);
                 if (level == 1)
                 {
                     minDamage        = 85;
@@ -585,7 +588,8 @@ namespace TowerDefense.Towers
                 }
             }
 
-            _baseGunScale = gunScale;
+            float finalGunScale = gunScale * _mapVisualScale;
+            _baseGunScale = finalGunScale;
             _isFiringAnim = false;
             _firingAnimTimer = 0f;
 
@@ -612,7 +616,7 @@ namespace TowerDefense.Towers
             if (turretGun != null)
             {
                 turretGun.localPosition = Vector3.zero;
-                turretGun.localScale = new Vector3(gunScale, gunScale, 1f);
+                turretGun.localScale = new Vector3(finalGunScale, finalGunScale, 1f);
                 if (IsKingdomRush25DTower)
                 {
                     turretGun.localRotation = Quaternion.identity;
@@ -689,10 +693,11 @@ namespace TowerDefense.Towers
             if (laserMuzzleGlow != null && laserMuzzleGlow.enabled) laserMuzzleGlow.enabled = false;
             if (laserImpactGlow != null && laserImpactGlow.enabled) laserImpactGlow.enabled = false;
 
-            // Khi ngừng bắn, đưa Tháp Laze Cấp 1 về lại Frame tĩnh (Idle)
-            if (towerType == TowerType.Laser && level == 1 && gunRenderer != null)
+            // Khi ngừng bắn, đưa Tháp Laze (Cấp 1, 2, 3) về lại Frame tĩnh (Idle)
+            if (towerType == TowerType.Laser && gunRenderer != null)
             {
-                Sprite idleSpr = CyberAssetLoader.GetSprite("kr_laser_lvl1_idle");
+                string idleName = (level >= 3) ? "kr_laser_lvl3_idle" : ((level == 2) ? "kr_laser_lvl2_idle" : "kr_laser_lvl1_idle");
+                Sprite idleSpr = CyberAssetLoader.GetSprite(idleName);
                 if (idleSpr != null) gunRenderer.sprite = idleSpr;
             }
         }
@@ -705,8 +710,8 @@ namespace TowerDefense.Towers
                 return;
             }
 
-            // Điểm xuất phát khớp chuẩn 100% tâm quả cầu phát sáng đỉnh tháp đá đứng (tính chính xác theo pixel + PPU 112 + gunScale)
-            float orbOffsetY = (level == 3) ? 0.86f : ((level == 2) ? 0.79f : 0.62f);
+            // Điểm xuất phát khớp chuẩn 100% tâm quả cầu phát sáng đỉnh tháp đá đứng (nhân theo tỷ lệ Map 1/2/3)
+            float orbOffsetY = ((level == 3) ? 0.86f : ((level == 2) ? 0.79f : 0.62f)) * _mapVisualScale;
             Vector3 startPos = transform.position + new Vector3(0f, orbOffsetY, 0f);
             Vector3 endPos = currentTarget.position;
             startPos.z = 0;
@@ -720,7 +725,7 @@ namespace TowerDefense.Towers
                 laserLineRenderer.SetPosition(1, endPos);
 
                 // Tia laze dạng chùm năng lượng liên tục (Stretch), sáng mượt không bị đứt đoạn / ngắt quãng
-                float width = (level == 3 ? 0.32f : (level == 2 ? 0.26f : 0.20f)) + Mathf.Sin(Time.time * 8f) * 0.012f;
+                float width = ((level == 3 ? 0.32f : (level == 2 ? 0.26f : 0.20f)) + Mathf.Sin(Time.time * 8f) * 0.012f) * _mapVisualScale;
                 laserLineRenderer.startWidth = width;
                 laserLineRenderer.endWidth = width * 0.85f;
             }
@@ -730,7 +735,7 @@ namespace TowerDefense.Towers
             {
                 laserMuzzleGlow.enabled = true;
                 laserMuzzleGlow.transform.position = startPos;
-                laserMuzzleGlow.transform.localScale = Vector3.one * ((level == 3 ? 0.58f : (level == 2 ? 0.50f : 0.42f)) + Mathf.Sin(Time.time * 14f) * 0.05f);
+                laserMuzzleGlow.transform.localScale = Vector3.one * (((level == 3 ? 0.58f : (level == 2 ? 0.50f : 0.42f)) + Mathf.Sin(Time.time * 14f) * 0.05f) * _mapVisualScale);
             }
 
             // Điểm sáng va chạm tại quái
@@ -738,17 +743,19 @@ namespace TowerDefense.Towers
             {
                 laserImpactGlow.enabled = true;
                 laserImpactGlow.transform.position = endPos;
-                laserImpactGlow.transform.localScale = Vector3.one * ((level == 3 ? 0.85f : 0.70f) + Mathf.Cos(Time.time * 25f) * 0.12f);
+                laserImpactGlow.transform.localScale = Vector3.one * (((level == 3 ? 0.85f : 0.70f) + Mathf.Cos(Time.time * 25f) * 0.12f) * _mapVisualScale);
                 laserImpactGlow.transform.Rotate(0, 0, 180f * Time.deltaTime);
             }
 
-            // Animation xung nhịp năng lượng (4 Frame pulse firing animation cho Cấp 1)
-            if (level == 1 && gunRenderer != null)
+            // Animation xung nhịp năng lượng (4 Frame pulse firing animation cho cả Cấp 1, 2, 3)
+            if (gunRenderer != null)
             {
-                Sprite[] fFrames = CyberAssetLoader.GetLaserLvl1FireFrames();
+                Sprite[] fFrames = (_cannonFireFrames != null && _cannonFireFrames.Length >= 4)
+                    ? _cannonFireFrames
+                    : CyberAssetLoader.GetLaserFireFrames(level);
                 if (fFrames != null && fFrames.Length >= 4)
                 {
-                    int animIdx = (int)((Time.time * 8f) % 4);
+                    int animIdx = (int)((Time.time * 9f) % 4);
                     if (fFrames[animIdx] != null) gunRenderer.sprite = fFrames[animIdx];
                 }
             }
@@ -899,7 +906,7 @@ namespace TowerDefense.Towers
                 float sx = Mathf.Lerp(1.0f, 0.94f, p) * _baseGunScale;
                 float sy = Mathf.Lerp(1.0f, 1.06f, p) * _baseGunScale;
                 turretGun.localScale = new Vector3(sx, sy, 1f);
-                turretGun.localPosition = -_lastAimDir * (0.03f * p);
+                turretGun.localPosition = -_lastAimDir * (0.03f * _mapVisualScale * p);
 
                 if (useLateralFireFrames && gunRenderer != null && _cannonFireFrames[1] != null)
                 {
@@ -915,7 +922,7 @@ namespace TowerDefense.Towers
                 float sx = Mathf.Lerp(0.94f, 1.22f, squashT) * _baseGunScale;
                 float sy = Mathf.Lerp(1.06f, 0.82f, squashT) * _baseGunScale;
                 turretGun.localScale = new Vector3(sx, sy, 1f);
-                turretGun.localPosition = -_lastAimDir * Mathf.Lerp(0.03f, 0.09f, squashT);
+                turretGun.localPosition = -_lastAimDir * (Mathf.Lerp(0.03f, 0.09f, squashT) * _mapVisualScale);
 
                 if (useLateralFireFrames && gunRenderer != null && _cannonFireFrames[2] != null)
                 {
@@ -930,7 +937,7 @@ namespace TowerDefense.Towers
                 float sx = Mathf.Lerp(0.92f, 1.0f, p) * _baseGunScale;
                 float sy = Mathf.Lerp(1.10f, 1.0f, p) * _baseGunScale;
                 turretGun.localScale = new Vector3(sx, sy, 1f);
-                turretGun.localPosition = Vector3.Lerp(_lastAimDir * 0.03f, Vector3.zero, p);
+                turretGun.localPosition = Vector3.Lerp(_lastAimDir * (0.03f * _mapVisualScale), Vector3.zero, p);
 
                 if (useLateralFireFrames && gunRenderer != null)
                 {
@@ -974,7 +981,7 @@ namespace TowerDefense.Towers
             if (IsKingdomRush25DTower && currentTarget != null)
             {
                 // Điểm xuất phát đạn/tên lửa nhô ra ở đầu miệng nòng theo hướng ngắm hiện tại
-                spawnPos = transform.position + _lastAimDir * 0.38f;
+                spawnPos = transform.position + _lastAimDir * (0.38f * _mapVisualScale);
             }
             Quaternion spawnRot = turretGun != null ? turretGun.rotation : Quaternion.identity;
 
@@ -983,6 +990,7 @@ namespace TowerDefense.Towers
 
             GameObject projGO = Instantiate(bulletPrefab, spawnPos, spawnRot);
             Sprite projSprite = CyberAssetLoader.GetSprite(_currentProjectileSpriteName);
+            float scaledProjScale = _currentProjectileScale * _mapVisualScale;
 
             // Bắn Rocket AoE (Pháo Tên Lửa Kingdom Rush)
             if (towerType == TowerType.Rocket)
@@ -993,7 +1001,7 @@ namespace TowerDefense.Towers
                     rocket.SetProjectileVisual(
                         projSprite,
                         Color.white,
-                        _currentProjectileScale,
+                        scaledProjScale,
                         _currentProjectileSpeed,
                         _currentProjectileAngleOffset
                     );
@@ -1010,7 +1018,7 @@ namespace TowerDefense.Towers
                 bullet.SetProjectileVisual(
                     projSprite,
                     Color.white,
-                    _currentProjectileScale,
+                    scaledProjScale,
                     _currentProjectileSpeed,
                     _currentProjectileAngleOffset,
                     _currentProjectileSpin,
@@ -1029,7 +1037,7 @@ namespace TowerDefense.Towers
                 fallbackRocket.SetProjectileVisual(
                     projSprite,
                     Color.white,
-                    _currentProjectileScale,
+                    scaledProjScale,
                     _currentProjectileSpeed,
                     _currentProjectileAngleOffset
                 );
@@ -1054,7 +1062,7 @@ namespace TowerDefense.Towers
             if (fxToSpawn != null)
             {
                 GameObject fx = Instantiate(fxToSpawn, transform.position, Quaternion.identity);
-                fx.transform.localScale = Vector3.one * (level >= 3 ? 1.85f : 1.45f);
+                fx.transform.localScale = Vector3.one * ((level >= 3 ? 1.85f : 1.45f) * _mapVisualScale);
             }
 
             Debug.Log($"<color=yellow><b>⭐ [NÂNG CẤP CẤP {level}] {TowerTypeName} (Sát thương: {DamageRangeText}, Tầm bắn: {attackRange}, Hoàn vàng nếu bán: {SellRefundGold})</b></color>");

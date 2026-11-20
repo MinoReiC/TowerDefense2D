@@ -74,6 +74,8 @@ namespace TowerDefense.Managers
         private static Sprite[] _rocketLvl1FireFrames;
         private static Sprite[] _laserLvl1DirSprites;
         private static Sprite[] _laserLvl1FireFrames;
+        private static Sprite[] _laserLvl2FireFrames;
+        private static Sprite[] _laserLvl3FireFrames;
         private static Sprite[] _enemyTankLvl1Frames;
         private static Sprite[] _enemyTankLvl2Frames;
         private static Sprite[] _enemyTankLvl3Frames;
@@ -142,6 +144,22 @@ namespace TowerDefense.Managers
             "kr_laser_lvl1_fire_f2", // Frame 2: Flare pulse
             "kr_laser_lvl1_fire_f3", // Frame 3: Zap Blast / Electric arc
             "kr_laser_lvl1_fire_f4"  // Frame 4: Stretch & Cooldown
+        };
+
+        private static readonly string[] LASER_LVL2_FIRE_NAMES = new string[4]
+        {
+            "kr_laser_lvl2_fire_f1", // Frame 1: Charge pulse
+            "kr_laser_lvl2_fire_f2", // Frame 2: Rising surge
+            "kr_laser_lvl2_fire_f3", // Frame 3: Peak discharge / Zap blast!
+            "kr_laser_lvl2_fire_f4"  // Frame 4: Afterglow
+        };
+
+        private static readonly string[] LASER_LVL3_FIRE_NAMES = new string[4]
+        {
+            "kr_laser_lvl3_fire_f1", // Frame 1: Lower ring ignition
+            "kr_laser_lvl3_fire_f2", // Frame 2: Ascending ring surge
+            "kr_laser_lvl3_fire_f3", // Frame 3: Super Overcharge Blast!
+            "kr_laser_lvl3_fire_f4"  // Frame 4: Prismatic afterglow
         };
 
         private static readonly string[] ENEMY_TANK_LVL1_NAMES = { "kr_enemy_tank_lvl1_f1", "kr_enemy_tank_lvl1_f2", "kr_enemy_tank_lvl1_f3", "kr_enemy_tank_lvl1_f4" };
@@ -280,6 +298,26 @@ namespace TowerDefense.Managers
                 _laserLvl1FireFrames[i] = GetSprite(LASER_LVL1_FIRE_NAMES[i]);
             }
             return _laserLvl1FireFrames;
+        }
+
+        /// <summary>
+        /// Lấy bộ 4 Frame Animation xung năng lượng khi Tháp Laze Cấp 2 bắn tia (Zero-GC).
+        /// </summary>
+        public static Sprite[] GetLaserLvl2FireFrames() => GetOrLoadFrameSequence(ref _laserLvl2FireFrames, LASER_LVL2_FIRE_NAMES);
+
+        /// <summary>
+        /// Lấy bộ 4 Frame Animation xung năng lượng khi Tháp Laze Cấp 3 bắn tia (Zero-GC).
+        /// </summary>
+        public static Sprite[] GetLaserLvl3FireFrames() => GetOrLoadFrameSequence(ref _laserLvl3FireFrames, LASER_LVL3_FIRE_NAMES);
+
+        /// <summary>
+        /// Lấy đúng chuỗi 4 Frame Animation khi Tháp Laze bắn tia theo cấp độ (1, 2, 3) (Zero-GC).
+        /// </summary>
+        public static Sprite[] GetLaserFireFrames(int level)
+        {
+            if (level >= 3) return GetLaserLvl3FireFrames();
+            if (level == 2) return GetLaserLvl2FireFrames();
+            return GetLaserLvl1FireFrames();
         }
 
         /// <summary>

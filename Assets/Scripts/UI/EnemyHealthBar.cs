@@ -1,5 +1,6 @@
 using UnityEngine;
 using TowerDefense.Enemies;
+using TowerDefense.Managers;
 
 namespace TowerDefense.UI
 {
@@ -19,6 +20,11 @@ namespace TowerDefense.UI
         private void Awake()
         {
             enemy = GetComponent<Enemy>();
+            float mapScale = GameManager.GetMapEnemyVisualScale();
+            if (!Mathf.Approximately(mapScale, 1f))
+            {
+                offset *= mapScale;
+            }
             CreateBarVisuals();
         }
 

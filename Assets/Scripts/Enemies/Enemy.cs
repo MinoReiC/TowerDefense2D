@@ -44,6 +44,12 @@ namespace TowerDefense.Enemies
         {
             ApplyKingdomRushArchetypeStats();
             currentHealth = maxHealth;
+
+            float mapScale = GameManager.GetMapEnemyVisualScale();
+            if (!Mathf.Approximately(mapScale, 1f))
+            {
+                transform.localScale *= mapScale;
+            }
         }
 
         /// <summary>
@@ -197,7 +203,8 @@ namespace TowerDefense.Enemies
             // Sinh hiệu ứng nổ tại vị trí quái chết
             if (explosionPrefab != null)
             {
-                Instantiate(explosionPrefab, transform.position, Quaternion.identity);
+                GameObject fx = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
+                fx.transform.localScale *= GameManager.GetMapEnemyVisualScale();
             }
 
             OnDeath?.Invoke(this);

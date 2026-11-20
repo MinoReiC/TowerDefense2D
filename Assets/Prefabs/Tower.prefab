@@ -241,8 +241,8 @@ MonoBehaviour:
   damage: 20
   splashRadius: 1.6
   armorPenetration: 0.15
-  critChance: 0.15
-  critMultiplier: 1.5
+  critChance: 0
+  critMultiplier: 1
   turretGun: {fileID: 5372393398985990353}
   firePoint: {fileID: 9208369710417484357}
   bulletPrefab: {fileID: 8475480909456673213, guid: 581975c27addc564eb8adeb9f3aca43e, type: 3}

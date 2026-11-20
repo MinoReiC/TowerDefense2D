@@ -61,6 +61,40 @@ namespace TowerDefense.Managers
             SetupMapBackground(sceneName);
         }
 
+        /// <summary>
+        /// Hệ số tỷ lệ hiển thị của Tháp, Đạn & Vòng đặt pháo theo độ rộng Camera/Map
+        /// để pháo luôn vừa khít đều đặn trên ô đất ở cả Map 1, Map 2 và Map 3.
+        /// </summary>
+        public static float GetMapTowerVisualScale(string sceneName = null)
+        {
+            if (string.IsNullOrEmpty(sceneName))
+                sceneName = SceneManager.GetActiveScene().name;
+
+            if (sceneName == "Level3Scene" || sceneName == "Map3Scene")
+                return 1.44f;
+            if (sceneName == "Level2Scene" || sceneName == "Map2Scene")
+                return 1.30f;
+
+            return 1.0f;
+        }
+
+        /// <summary>
+        /// Hệ số tỷ lệ kích thước Quái & Hiệu ứng nổ trên từng bản đồ
+        /// để xe tăng và máy bay rõ nét, cân đối với lòng đường rộng và Camera trên Map 2 & Map 3.
+        /// </summary>
+        public static float GetMapEnemyVisualScale(string sceneName = null)
+        {
+            if (string.IsNullOrEmpty(sceneName))
+                sceneName = SceneManager.GetActiveScene().name;
+
+            if (sceneName == "Level3Scene" || sceneName == "Map3Scene")
+                return 1.38f;
+            if (sceneName == "Level2Scene" || sceneName == "Map2Scene")
+                return 1.28f;
+
+            return 1.0f;
+        }
+
         private void SetupMapBackground(string sceneName)
         {
             string bgResourceName = "Map1_Battlefield_BG";
@@ -127,6 +161,10 @@ namespace TowerDefense.Managers
                 bgSprite.name = bgResourceName;
                 sr.sprite = bgSprite;
             }
+
+            MapEnvironmentAnimator envAnim = bgObj.GetComponent<MapEnvironmentAnimator>();
+            if (envAnim == null) envAnim = bgObj.AddComponent<MapEnvironmentAnimator>();
+            envAnim.Initialize(sceneName, bgObj.transform, orthoSize);
         }
 
         private void OnDestroy()
