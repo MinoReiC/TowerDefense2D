@@ -419,7 +419,7 @@ namespace TowerDefense.Towers
                     gunSpriteName  = "kr_cannon_lvl2_idle";
                     gunScale       = 1.08f;
                     _currentProjectileSpriteName  = "kr_bullet_cannon_lvl2";
-                    _currentProjectileScale       = 1.02f;
+                    _currentProjectileScale       = 0.78f;
                     _currentProjectileSpeed       = 14.5f;
                     _currentProjectileAngleOffset = -22f; // Khớp đuôi gió trắng của bi sắt lớn Cấp 2
                     _currentProjectileSpin        = false;
@@ -440,7 +440,7 @@ namespace TowerDefense.Towers
                     gunSpriteName  = "kr_cannon_lvl3_idle";
                     gunScale       = 1.10f;
                     _currentProjectileSpriteName  = "kr_bullet_cannon_lvl3";
-                    _currentProjectileScale       = 1.12f;
+                    _currentProjectileScale       = 0.72f;
                     _currentProjectileSpeed       = 16f;
                     _currentProjectileAngleOffset = 0f;
                     _currentProjectileSpin        = true; // Bom tròn sọc đỏ xoay tròn trên không
@@ -491,7 +491,7 @@ namespace TowerDefense.Towers
                     gunSpriteName  = "kr_rocket_lvl2_idle";
                     gunScale       = 1.08f;
                     _currentProjectileSpriteName  = "kr_missile_lvl2";
-                    _currentProjectileScale       = 1.04f;
+                    _currentProjectileScale       = 0.87f;
                     _currentProjectileSpeed       = 9.5f;
                     _currentProjectileAngleOffset = -28f;
                     _currentProjectileSpin        = false;
@@ -513,7 +513,7 @@ namespace TowerDefense.Towers
                     gunSpriteName  = "kr_rocket_lvl3_idle";
                     gunScale       = 1.16f;
                     _currentProjectileSpriteName  = "kr_missile_lvl3";
-                    _currentProjectileScale       = 1.15f;
+                    _currentProjectileScale       = 0.84f;
                     _currentProjectileSpeed       = 10.5f;
                     _currentProjectileAngleOffset = -32f;
                     _currentProjectileSpin        = false;
@@ -560,7 +560,7 @@ namespace TowerDefense.Towers
                     gunSpriteName  = "kr_laser_lvl2_idle"; // Tháp Laze Cấp 2
                     baseColor      = Color.white;
                     gunColor       = Color.white;
-                    gunScale       = 1.08f;
+                    gunScale       = 1.04f;
                     _currentProjectileSpriteName = "kr_laser_orb_lvl2";
                     _currentProjectileScale = 1.15f;
                     _currentProjectileSpeed = 18f;
@@ -581,7 +581,7 @@ namespace TowerDefense.Towers
                     gunSpriteName  = "kr_laser_lvl3_idle"; // Tháp Laze Cấp 3
                     baseColor      = Color.white;
                     gunColor       = Color.white;
-                    gunScale       = 1.15f;
+                    gunScale       = 1.06f;
                     _currentProjectileSpriteName = "kr_laser_orb_lvl3";
                     _currentProjectileScale = 1.30f;
                     _currentProjectileSpeed = 20f;
@@ -711,7 +711,7 @@ namespace TowerDefense.Towers
             }
 
             // Điểm xuất phát khớp chuẩn 100% tâm quả cầu phát sáng đỉnh tháp đá đứng (nhân theo tỷ lệ Map 1/2/3)
-            float orbOffsetY = ((level == 3) ? 0.86f : ((level == 2) ? 0.79f : 0.62f)) * _mapVisualScale;
+            float orbOffsetY = ((level == 3) ? 1.08f : ((level == 2) ? 1.11f : 0.83f)) * _mapVisualScale;
             Vector3 startPos = transform.position + new Vector3(0f, orbOffsetY, 0f);
             Vector3 endPos = currentTarget.position;
             startPos.z = 0;

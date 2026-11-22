@@ -31,13 +31,22 @@ namespace TowerDefense.Managers
             {
                 tex.filterMode = FilterMode.Bilinear;
 
-                // Với bộ Pháo Đơn & Pháo Tên Lửa Kingdom Rush (2.5D Isometric kèm bệ đá), đặt tâm xoay (Pivot) ngay tại tâm của Bệ Đá (0.5f, 0.40f)
-                // để bệ đá nằm chính giữa tâm ô đất trên Map (không bị tụt xuống mép dưới ô đất)!
+                // Với bộ Pháo Đơn, Pháo Tên Lửa và Tháp Laze Kingdom Rush (2.5D Isometric kèm bệ đá),
+                // đặt tâm (Pivot) đúng tâm mặt đế đá/bao cát dưới chân tháp để đứng gọn trong ô đặt súng.
+                bool isLaserLvl1 = assetName.StartsWith("kr_laser_lvl1");
+                bool isLaserLvl2 = assetName.StartsWith("kr_laser_lvl2");
+                bool isLaserLvl3 = assetName.StartsWith("kr_laser_lvl3");
                 bool isKingdomRush25DTower = assetName.StartsWith("kr_cannon_lvl")
                                           || assetName.StartsWith("kr_rocket_lvl")
-                                          || assetName.StartsWith("kr_laser_lvl")
+                                          || isLaserLvl1 || isLaserLvl2 || isLaserLvl3
                                           || assetName == "kr_cannon_base";
-                Vector2 pivot = isKingdomRush25DTower ? new Vector2(0.5f, 0.40f) : new Vector2(0.5f, 0.5f);
+                Vector2 pivot = isLaserLvl1
+                    ? new Vector2(0.5f, 0.25f)
+                    : (isLaserLvl2
+                        ? new Vector2(0.5f, 0.16f)
+                        : (isLaserLvl3
+                            ? new Vector2(0.5f, 0.25f)
+                            : (isKingdomRush25DTower ? new Vector2(0.5f, 0.40f) : new Vector2(0.5f, 0.5f))));
                 float ppu = isKingdomRush25DTower
                     ? 112f
                     : (assetName.StartsWith("kr_enemy_") ? 105f : (assetName.StartsWith("kr_fx_explosion_") ? 110f : 100f));
