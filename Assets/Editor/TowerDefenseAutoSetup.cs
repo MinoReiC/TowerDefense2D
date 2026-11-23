@@ -1004,8 +1004,6 @@ namespace TowerDefense.EditorTools
             // 8. GameManager + SimpleHUD
             GameObject gmGO = GameObject.Find("GameManager");
             if (gmGO == null) gmGO = new GameObject("GameManager");
-            TowerPlacement oldPlacement = gmGO.GetComponent<TowerPlacement>();
-            if (oldPlacement != null) Object.DestroyImmediate(oldPlacement);
             GameManager gm = gmGO.GetComponent<GameManager>();
             if (gm == null) gm = gmGO.AddComponent<GameManager>();
             SimpleHUD hud = gmGO.GetComponent<SimpleHUD>();

@@ -81,7 +81,6 @@ namespace TowerDefense.Managers
         private static Sprite[] _cannonLvl1FireFrames;
         private static Sprite[] _rocketLvl1DirSprites;
         private static Sprite[] _rocketLvl1FireFrames;
-        private static Sprite[] _laserLvl1DirSprites;
         private static Sprite[] _laserLvl1FireFrames;
         private static Sprite[] _laserLvl2FireFrames;
         private static Sprite[] _laserLvl3FireFrames;
@@ -133,18 +132,6 @@ namespace TowerDefense.Managers
             "kr_rocket_lvl1_fire_f2", // Frame 2: Ignition (Backblast spark)
             "kr_rocket_lvl1_fire_f3", // Frame 3: Launch Kick / Squash!
             "kr_rocket_lvl1_fire_f4"  // Frame 4: Stretch & Settle (Tube smoke puff)
-        };
-
-        private static readonly string[] LASER_LVL1_DIR_NAMES = new string[8]
-        {
-            "kr_laser_lvl1_dir0", // 0° Right
-            "kr_laser_lvl1_dir1", // 45° Up-Right
-            "kr_laser_lvl1_dir2", // 90° Up
-            "kr_laser_lvl1_dir3", // 135° Up-Left
-            "kr_laser_lvl1_dir4", // 180° Left
-            "kr_laser_lvl1_dir5", // 225° Down-Left
-            "kr_laser_lvl1_dir6", // 270° Down
-            "kr_laser_lvl1_dir7"  // 315° Down-Right
         };
 
         private static readonly string[] LASER_LVL1_FIRE_NAMES = new string[4]
@@ -271,24 +258,6 @@ namespace TowerDefense.Managers
                 _rocketLvl1FireFrames[i] = GetSprite(ROCKET_LVL1_FIRE_NAMES[i]);
             }
             return _rocketLvl1FireFrames;
-        }
-
-        /// <summary>
-        /// Lấy bộ 8 Sprite góc chiếu Laze (0°..315°) của Tháp Laze Cấp 1 phong cách Kingdom Rush (Zero-GC).
-        /// </summary>
-        public static Sprite[] GetLaserLvl1DirSprites()
-        {
-            if (_laserLvl1DirSprites != null && _laserLvl1DirSprites.Length == 8 && _laserLvl1DirSprites[0] != null)
-            {
-                return _laserLvl1DirSprites;
-            }
-
-            _laserLvl1DirSprites = new Sprite[8];
-            for (int i = 0; i < 8; i++)
-            {
-                _laserLvl1DirSprites[i] = GetSprite(LASER_LVL1_DIR_NAMES[i]);
-            }
-            return _laserLvl1DirSprites;
         }
 
         /// <summary>
